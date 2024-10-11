@@ -36,7 +36,8 @@ class User extends Authenticatable
         'vertragsende',
         'teilzeit',
         'benachrichtigt',
-        'abgabedatum',        
+        'abgabedatum',
+        'berechtigung',
     ];
 
     /**
@@ -65,5 +66,10 @@ class User extends Authenticatable
     public function stelleBezeichnung()
     {
         return $this->belongsTo(Stelle::class, 'stelle');
-    }        
+    }
+
+    public function isAdmin(){
+        // dd($this->berechtigung);
+        return $this->berechtigung === '1';
+    }
 }

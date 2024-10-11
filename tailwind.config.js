@@ -14,6 +14,9 @@ export default {
             fontFamily: {
                 sans: ['Figtree', ...defaultTheme.fontFamily.sans],
             },
+            width: {
+                'content': '80%',  // definiere hier 4/5 oder was auch immer du benötigst
+            },
         },
     },
 

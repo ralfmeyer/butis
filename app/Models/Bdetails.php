@@ -22,10 +22,29 @@ class Bdetails extends Model
         'zusatz',
         'beurteiler1laenderung',
         'beurteiler2laenderung',
-    ];    
+    ];
+
+    protected $attributes = [
+        'id' => null,
+        'beurteilungid' => -1,
+        'beurteilungsmerkmalid' => -1,
+        'beurteiler1note' => null,
+        'beurteiler2note' => null,
+        'beurteiler1bemerkung' => null,
+        'beurteiler2bemerkung' => null,
+        'zusatz' => null,
+        'beurteiler1laenderung' => null,
+        'beurteiler2laenderung' => null,
+    ];
+
+    public function __construct(){
+        parent::__construct($this->attributes);
+    }
 
     public function beurteilung()
     {
         return $this->belongsTo(Beurteilung::class, 'beurteilungid');
-    }    
+    }
+
+
 }

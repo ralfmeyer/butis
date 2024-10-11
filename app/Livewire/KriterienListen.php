@@ -10,8 +10,8 @@ use Illuminate\Support\Facades\Log;
 
 class KriterienListen extends Component
 {
-    
-    
+
+
     public $id;
     public $bereich;
     public $nummer;
@@ -40,13 +40,15 @@ class KriterienListen extends Component
 
     public $showForm = false ;
 
-    public $header_ueberschrift = "Auflistung aller Kriterien";
+
 
 
     public function mount(){
         if (env('PRIVATE')){
             $this->kopfueberschrift = "xxx";
         }
+        else
+          $this->kopfueberschrift = "Auflistung der Beurteilungskriterien";
     }
 
     public function render()
@@ -59,7 +61,7 @@ class KriterienListen extends Component
 
     public function save()
     {
-        
+
         //$stelle->id = $this->id;
         $this->kriterium->bereich                = $this->bereich;
         $this->kriterium->nummer                 = $this->nummer ;
@@ -79,13 +81,14 @@ class KriterienListen extends Component
         $this->kriterium->fuehrungsmerkmal       = $this->fuehrungsmerkmal;
         $this->kriterium->save();
         $this->isModified = false ;
-        
+
         $this->showForm = false;
         // $this->dispatch('doMessage', ['Änderungen gespeichert']);
          session()->flash('message', 'Änderungen gespeichert.');
+        $this->dispatch('saved');
 
-    }  
-    
+    }
+
     public function edit($id){
         $this->showForm = true;
         $this->id = $id;
@@ -105,8 +108,8 @@ class KriterienListen extends Component
         $this->hinweistext2           = $this->kriterium->hinweistext2;
         $this->hinweistext3           = $this->kriterium->hinweistext3;
         $this->hinweistext4           = $this->kriterium->hinweistext4;
-        $this->hinweistext5           = $this->kriterium->hinweistext5;        
-        $this->fuehrungsmerkmal           = $this->kriterium->fuehrungsmerkmal;       
+        $this->hinweistext5           = $this->kriterium->hinweistext5;
+        $this->fuehrungsmerkmal           = $this->kriterium->fuehrungsmerkmal;
 
         $this->isModified = false ;
 

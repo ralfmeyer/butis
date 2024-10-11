@@ -12,7 +12,7 @@ class Stelle extends Model
     protected $table = 'stellen';
 
     protected $fillable = [
-        'id',        
+        'id',
         'kennzeichen',
         'bezeichnung',
         'ebene',
@@ -20,7 +20,7 @@ class Stelle extends Model
         'fuehrungskompetenz',
         'l',
         'r',
-    ];    
+    ];
 
 
     public function uebergeordneteStelle()
@@ -28,5 +28,20 @@ class Stelle extends Model
         return $this->belongsTo(Stelle::class, 'uebergeordnet');
     }
 
-    
+
+    public function children()
+    {
+        return $this->hasMany(Stelle::class, 'uebergeordnet');
+    }
+
+    public function parent()
+    {
+        return $this->belongsTo(Stelle::class, 'uebergeordnet');
+    }
+
+
+    public function mitarbeiter()
+    {
+        return $this->hasOne(Mitarbeiter::class, 'stelle'); // Assuming 'stelle_id' is the foreign key in the Mitarbeiter table
+    }
 }

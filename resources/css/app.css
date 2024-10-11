@@ -1,3 +1,216 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+
+/* Beurteilung Startseite */
+.be_head1{
+    @apply text-2xl
+}
+
+.be_head2{
+    @apply text-xl scroll-mt-4 text-sky-600
+}
+
+th.be_col1, th.be_col2, th.be_col3, th.be_col4, th.be_col5 {
+    @apply border-b border-gray-500 border-solid
+}
+
+.be_col1{
+    @apply w-1/12 px-1
+}
+
+.be_col2{
+    @apply w-2/12 text-left px-1
+}
+
+.be_col3{
+    @apply w-3/12 text-left px-1
+}
+
+.be_col4{
+    @apply w-4/12 text-left px-1
+}
+
+.be_col5{
+    @apply w-5/12 text-left px-1
+}
+
+.betable{
+    @apply w-full
+}
+
+.be_icon_color{
+    @apply text-sky-600;
+}
+
+/* Beurteilung Show */
+
+.be_show_abschnitt{
+    @apply border border-slate-400 rounded-md mt-2 shadow-md bg-slate-50
+}
+
+.be_show_abschnitt_header{
+    @apply be_head2 border-b border-slate-400 bg-slate-100 px-2 rounded-t-md
+}
+
+.be_show_table {
+    @apply mx-auto w-4/5 mx-14 border-2
+}
+
+.be_show_head_col1 {
+    @apply text-right px-3 w-1/2
+}
+
+.be_show_head_col2 {
+    @apply text-left  w-1/2
+}
+
+
+.be_show_col1 {
+    @apply w-1/5
+}
+
+.be_show_col2 {
+    @apply w-2/5
+}
+
+.be_show_col3 {
+    @apply w-2/5
+}
+
+
+/* Beurteilung Create */
+
+.be_create_table{
+    @apply mx-auto w-4/5 mx-14 border-2
+}
+
+.be_create_col1 {
+    @apply w-1/4
+}
+
+.be_create_col2 {
+    @apply w-1/4
+}
+
+.be_create_col3 {
+    @apply w-1/4
+}
+
+.be_create_col4 {
+    @apply w-1/4
+}
+
+.be_create_trenner_small{
+    @apply border-b border-blue-500
+}
+
+.be_create_colall{
+    @apply w-full
+}
+
+.be_create_k_head{
+    @apply be_head2 mt-2 mx-2
+}
+.be_create_k_text{
+    @apply text-sm mx-2
+}
+
+th.be_create_k_col1, th.be_create_k_col2, th.be_create_k_col3, th.be_create_k_col4, th.be_create_k_col5, th.be_create_k_col6 {
+    @apply border-blue-500 text-left align-bottom
+}
+
+.be_create_k_col1{
+    @apply w-2/6 align-middle
+}
+.be_create_k_col2{
+    @apply w-1/6 px-2
+}
+.be_create_k_col3{
+    @apply w-1/6
+}
+.be_create_k_col4{
+    @apply w-1/6
+}
+.be_create_k_col5{
+    @apply w-1/6
+}
+
+
+.be_create_k_trenner{
+    @apply border-b-2 border-gray-500
+}
+.be_create_k_trenner_blue{
+    @apply border-b-2  border-sky-600
+}
+
+
+
+
+
+.be_create_k_trenner_small{
+    @apply border-b border-gray-500
+}
+
+.inputdate{
+    @apply h-6 border rounded
+}
+
+.bc_create_col_active{
+    @apply bg-sky-100
+}
+
+.bc_create_col_inactive{
+    @apply text-gray-600
+}
+
+.be_create_radiogroup{
+    @apply ring-offset-2 ring-sky-500 checked:bg-sky-500 hover:bg-sky-500 selection:bg-sky-500 checked:focus:ring-sky-500 focus:bg-sky-500 checked:border-sky-500
+}
+
+
+.bc_create_border{
+    @apply border border-gray-400 rounded-md shadow-md
+}
+
+
+.suchFilter{
+    @apply ml-4 h-4 bg-slate-200 focus:outline-none focus:border-none text-xs text-gray-500 font-normal
+}
+
+.ed_label{
+    @apply text-right mr-4
+}
+
+.ed_input
+{
+    @apply text-sm bg-slate-50 rounded border-gray-500 border h-8 w-56
+}
+
+.ed_select{
+    @apply rounded h-8 text-sm p-0 pl-2 w-56
+}
+
+.ed_input_textbox
+{
+    @apply text-sm bg-slate-50 rounded border-gray-500 border h-14 w-full
+}
+
+.ed_input_textbox_small
+{
+    @apply text-sm bg-slate-50 rounded border-gray-500 border h-7 w-full
+}
+
+.temp{
+    @apply  border-r border-black
+}
+
+.bc_create_col_active textarea{
+    @apply opacity-85
+}
+
+select.bc_create{
+    @apply h-7 px-2 py-0  rounded align-middle w-40 m-2
+}

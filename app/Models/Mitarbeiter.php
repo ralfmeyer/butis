@@ -6,6 +6,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
+use App\Models\User;
+use App\Models\BeurtStatus;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class Mitarbeiter extends Model
 {
@@ -20,6 +24,11 @@ class Mitarbeiter extends Model
         return $this->belongsTo(Stelle::class, 'stelle');
     }
 
+    public function beurteilung()
+{
+    return $this->hasMany(Beurteilung::class, 'mitarbeiterid');
+}
+
     protected $_name = 'mitarbeiter';
 
     /* NEU 12.07.2024
@@ -33,7 +42,16 @@ class Mitarbeiter extends Model
              $row = $adapter->fetchRow( $select ) ;
              return $row ;
     }
+
 NEU */
+
+    private function getMitarbeiterID($mitarbeiterID)
+    {
+        if (!$mitarbeiterID) {
+            return 79; // frye // Beispiel-ID, setze hier die tatsächliche ID
+            //return = 21 ; // Blömer => Stelle=200 // Beispiel-ID, setze hier die tatsächliche ID
+        }
+    }
 
     public function search($suchtext)
     {
@@ -67,66 +85,347 @@ NEU */
     /*
      * NEU 12.07.2024
      */
-      public function getFaelligeMitarbeiterBeurteiler1( $mitarbeiterID )
-      {
-            try {
-     
-                $order = array ( 'mm.name', 'mm.vorname' ) ;
-     
-     
-                $vorlauf = 60 ;//11.07.2024 #################### Application_Model_Config::getAlle( 'vorlauf' ) ;
-                if ($vorlauf == "")
-                    $vorlauf = 60 ;
-                
-                $bedingung_zeiraum = "(( datediff( mm.nbeurteilung, curdate() ) <= ? ) or mm.nbeurteilung is null)" ;
-                $bedingung_regelbeurteilung_nicht_angefangen = "not exists( select id from beurteilung where mitarbeiterid = mm.id and ( abgeschlossen1 = 0 or ( abgeschlossen1 = 1 and abgeschlossen2 = 0 ) ) )" ;
-                $bedingung_nichtausgeschieden = "(mm.ausgeschieden = 0) " ;
+    // #region Meine Region
+    public function getFaelligeMitarbeiterBeurteiler1($mitarbeiterID)
+    {
+        // Gibt ein array zurück mit ID's der zur Beurteilung fälligen Mitarbeiter unter der $mitarbeiterID
+        // z.B. rows[0]->id = 417
+        try {
+            Log::info('getFaelligeMitarbeiterBeurteiler1() Anfang ', [$mitarbeiterID]);
+
+            /*
+                Log::info('Passwort setzen');
+                $users = User::all();
+
+                foreach ($users as $user) {
+                    Log::info('Passwort setzen von: ', [ $user->id, $user->name ]);
+                    if (!Hash::needsRehash($user->password)) {
+                        continue;
+                    }
+
+                    $user->password = Hash::make($user->password);
+                    $user->save();
+                }
 
 
-                $query = DB::table('users as m')->select('m.*', 'st1.*')
-                ->leftJoin('stellen as st1', 'st1.id', '=', 'm.stelle')         // ST1.id = 12 
-                ->leftJoin('users as mm', 'mm.stelle', '=' , 'st1.id')
+
+                $mitarbeiterID = 79;
+                */
+            $vorlauf = 60;
+
+            $query = DB::table('users as m')
+                ->select('mm.*')
+                ->leftJoin('stellen as st1', 'st1.id', '=', 'm.stelle')
+                ->leftJoin('stellen as st2', 'st2.uebergeordnet', '=', 'st1.id')
+                ->leftJoin('users as mm', 'mm.stelle', '=', 'st2.id')
                 ->where('m.id', $mitarbeiterID)
-                ->where( $bedingung_nichtausgeschieden )
-                ->whereRaw($bedingung_zeiraum, [ $vorlauf ] )
-                ->orderBy( $order )
-                #->raw( $bedingung_regelbeurteilung_nicht_angefangen )  // keine angefangene Beurteilung haben und
-                                 // nicht ausgeschieden sind.
-                ;
+                ->whereNotExists(function ($query) {
+                    $query
+                        ->select(DB::raw(1))
+                        ->from('beurteilung')
+                        ->whereColumn('mitarbeiterid', 'mm.id')
+                        ->where(function ($query) {
+                            $query->where('abgeschlossen1', 0)->orWhere(function ($query) {
+                                $query->where('abgeschlossen1', 1)->where('abgeschlossen2', 0);
+                            });
+                        });
+                })
+                ->where('mm.ausgeschieden', 0)
+                ->where(function ($query) use ($vorlauf) {
+                    $query->whereRaw('datediff(mm.nbeurteilung, curdate()) <= ?', [$vorlauf])->orWhereNull('mm.nbeurteilung');
+                })
+                ->orderBy('mm.name', 'asc')
+                ->orderBy('mm.vorname', 'asc');
 
+            $rows = $query->get();
 
-                //$sql = $query->toSql ();
-                //echo $sql;
+            Log::info('getFaelligeMitarbeiterBeurteiler1() Ende count Rows ', [count($rows)]);
 
+            return $rows;
+        } catch (Exception $e) {
+            echo 'Exception getFaelligeMitarbeiterBeurteiler1: ', $e->getMessage(), "\n";
+            die();
+        }
+    }
 
-                $rows = $query->get();
-                dd($rows);
+    // #endregion
 
+    /*
+     * NEU 01.08.2024
+     */
 
-                
-     /* ALTe original Bedingung
-                // Selektiere alle Mitarbieter die zu Beurteiler 1 gehören und
-                $select = $adapter->select()
-                                                ->from( array( 'm' => 'mitarbeiter' ), array( ) )
-                                                ->join( array( 'st1' => 'stellen'), 'st1.uebergeordnet = m.stelle', array())
-                                                ->join( array( 'mm' => 'mitarbeiter'), 'mm.stelle = st1.id' )
-                                                ->where( "m.id = $mitarbeiterID" )
-                                                ->where( $bedingung_zeiraum )                            // innerhalb des Zeitraums liegen und
-                                                ->where( $bedingung_regelbeurteilung_nicht_angefangen )  // keine angefangene Beurteilung haben und
-                                                ->where( $bedingung_nichtausgeschieden )                 // nicht ausgeschieden sind.
-                                                ->order( $order ) ;
-     
-                $rows = $adapter->fetchAll( $select ) ;
-    */
-                return $rows;
-                    
-     
-            } catch (Exception $e) {
-                echo 'Exception getFaelligeMitarbeiterBeurteiler1: ',  $e->getMessage(), "\n";
-                die;
+    public function getMitarbeiterArrayUnterBeurteiler1($mitarbeiterID)
+    {
+        // Gibt alle nicht ausgeschiedenen Mitarbeiter zurück
+        // Rückgabe = Array of Integer = ID's
+        // #region 01.08.2024
+        try {
+            $query = DB::table('users as m')->select('mm.id')->leftJoin('stellen as st1', 'st1.id', '=', 'm.stelle')->leftJoin('stellen as st2', 'st2.uebergeordnet', '=', 'st1.id')->leftJoin('users as mm', 'mm.stelle', '=', 'st2.id')->where('m.id', $mitarbeiterID)->where('mm.ausgeschieden', 0)->orderBy('mm.name', 'asc')->orderBy('mm.vorname', 'asc');
+
+            $rows = $query->get();
+
+            $arr = [];
+            foreach ($rows as $item) {
+                if (!in_array($item->id, $arr) && $item->id != null) {
+                    $arr[] = $item->id;
+                }
             }
-      }
-     
+
+            return $arr;
+        } catch (Exception $e) {
+            echo 'Exception getFaelligeMitarbeiterBeurteiler1: ', $e->getMessage(), "\n";
+            die();
+        }
+    }
+    // #endregion
+
+    public function getMitarbeiterUnterBeurteiler1($mitarbeiterID)
+    // Gibt ein array zurück mit ID's der zur Beurteilung fälligen Mitarbeiter unter der $mitarbeiterID
+    // z.B. rows[0]->id = 417
+//  #region 01.08.2024
+    {
+        try {
+            $arr = $this->getMitarbeiterArrayUnterBeurteiler1($mitarbeiterID);
+
+            $rows = $this->whereIn('id', $arr)->get();
+
+            return $rows;
+        } catch (Exception $e) {
+            echo 'Exception getFaelligeMitarbeiterBeurteiler1: ', $e->getMessage(), "\n";
+            die();
+        }
+    }
+//  #endregion
+
+    public function getMitarbeiterAllerEbenenUnterBeurteiler1($mitarbeiterID)
+    // Liefert alle Mitabarbeiter, bis sechs ebenen unterhalb der MitarbeiterID
+    // Zurückgegeben wird ein MitarbeiterCollection
+//  #region 01.08.2024
+    {
+
+        $order = 'm1.name'; // Beispiel-Order, passe diese an
+
+        $query = DB::table('users as m1')
+            ->select('m1.id as M1_ID', 'm2.id as M2_ID', 'm3.id as M3_ID', 'm4.id as M4_ID', 'm5.id as M5_ID', 'm6.id as M6_ID')
+            ->leftJoin('stellen as st1', 'st1.id', '=', 'm1.stelle') // ST1.id = 12 uebergeordnet = 6
+            ->leftJoin('stellen as st2', 'st2.uebergeordnet', '=', 'st1.id') // ST2.id = 13 uebergeordnet = 12
+            ->leftJoin('stellen as st3', 'st3.uebergeordnet', '=', 'st2.id') // ST3.id = NULL  => es gibt keine Stelle, die die ID 13 als übergeordnet hat
+            ->leftJoin('stellen as st4', 'st4.uebergeordnet', '=', 'st3.id')
+            ->leftJoin('stellen as st5', 'st5.uebergeordnet', '=', 'st4.id')
+            ->leftJoin('stellen as st6', 'st6.uebergeordnet', '=', 'st5.id')
+            ->leftJoin('stellen as st7', 'st7.uebergeordnet', '=', 'st6.id')
+            ->leftJoin('users as m2', 'm2.stelle', '=', 'st2.id')
+            ->leftJoin('users as m3', 'm3.stelle', '=', 'st3.id')
+            ->leftJoin('users as m4', 'm4.stelle', '=', 'st4.id')
+            ->leftJoin('users as m5', 'm2.stelle', '=', 'st5.id')
+            ->leftJoin('users as m6', 'm2.stelle', '=', 'st6.id')
+            ->where('m1.id', $mitarbeiterID);
+        // echo $query->toSql();
+        $results = $query->get();
+
+        $arr = [];
+        foreach ($results as $item) {
+            if (!in_array($item->M1_ID, $arr) && $item->M1_ID != null) {
+                $arr[] = $item->M1_ID;
+            }
+            if (!in_array($item->M2_ID, $arr) && $item->M2_ID != null) {
+                $arr[] = $item->M2_ID;
+            }
+            if (!in_array($item->M3_ID, $arr) && $item->M3_ID != null) {
+                $arr[] = $item->M3_ID;
+            }
+            if (!in_array($item->M4_ID, $arr) && $item->M4_ID != null) {
+                $arr[] = $item->M4_ID;
+            }
+            if (!in_array($item->M5_ID, $arr) && $item->M5_ID != null) {
+                $arr[] = $item->M5_ID;
+            }
+            if (!in_array($item->M6_ID, $arr) && $item->M6_ID != null) {
+                $arr[] = $item->M6_ID;
+            }
+        }
+
+        /*
+        $query = Mitarbeiter::whereIn('id', $arr)->where('ausgeschieden', '0')->get();
+
+        return Beurteilung::select('id')
+                ->where('mitarbeiterid', $mitarbeiterID)
+                ->orderBy('datum','desc')
+                ->first();*/
+
+                $query = Mitarbeiter::whereIn('id', $arr)
+                ->where('ausgeschieden', '0')
+                ->with(['beurteilung' => function($q) {
+                    $q->select('id', 'mitarbeiterid', 'abgeschlossen1', 'abgeschlossen2', 'datum')
+                      ->orderBy('datum', 'desc');
+                }])
+                ->get()
+                ->map(function($mitarbeiter) {
+                    // Nur die letzte Beurteilung für jeden Mitarbeiter auswählen
+                    $mitarbeiter->beurteilung = $mitarbeiter->beurteilung->first();
+                    return $mitarbeiter;
+                });
+
+//            dd($query->toRawSql());
+
+
+
+
+        return $query;
+    }
+//  #endregion
+
+
+    public function getMitarbeiterArrayUnterBeurteiler2($mitarbeiterID)
+    // Liefert ein Array aus Mitarbeiter ID's.
+    // Ermittelt werdne die Mitabeiter, über die der angemeldete User Bearbeiter 2 ist.
+//  #region 01.08.2024
+    {
+
+        $order = 'm1.name'; // Beispiel-Order, passe diese an
+
+        $query = DB::table('users as m1')
+            ->select('m3.id as M3_ID')
+            ->leftJoin('stellen as st1', 'st1.id', '=', 'm1.stelle') // ST1.id = 12 uebergeordnet = 6
+            ->leftJoin('stellen as st2', 'st2.uebergeordnet', '=', 'st1.id') // ST2.id = 13 uebergeordnet = 12
+            ->leftJoin('stellen as st3', 'st3.uebergeordnet', '=', 'st2.id') // ST3.id = NULL  => es gibt keine Stelle, die die ID 13 als übergeordnet hat
+            ->leftJoin('users as m2', 'm2.stelle', '=', 'st2.id')
+            ->leftJoin('users as m3', 'm3.stelle', '=', 'st3.id')
+            ->where('m3.ausgeschieden', 0)
+            ->where('m1.id', $mitarbeiterID);
+        //echo $query->toSql();
+        $results = $query->get();
+
+        //dd($results);
+        $arr = [];
+        foreach ($results as $item) {
+            if (!in_array($item->M3_ID, $arr) && $item->M3_ID != null) {
+                $arr[] = $item->M3_ID;
+            }
+        }
+
+        return $arr;
+    }
+//  #endregion
+
+
+    public function getMitarbeiterUnterBeurteiler2($mitarbeiterID)
+    {
+        // Liefert alle Mitarbeiter ID's.
+        // Ermittelt werden die Mitabeiter, über die der angemeldete User Bearbeiter 2 ist.
+
+        $mitarbeiterArr = $this->getMitarbeiterArrayUnterBeurteiler2($mitarbeiterID);
+
+        $order = 'm1.name'; // Beispiel-Order, passe diese an
+
+        // $query = Mitarbeiter::whereIn('id', $mitarbeiterArr)->orderBy('name')->orderBy('vorname')->get();
+
+
+
+        $query = Mitarbeiter::whereIn('id', $mitarbeiterArr)
+        ->where('ausgeschieden', '0')
+        ->with(['beurteilung' => function($q) {
+            $q->select('id', 'mitarbeiterid', 'abgeschlossen1', 'abgeschlossen2', 'datum')
+              ->orderBy('datum', 'desc');
+        }])
+        ->orderBy('name')->orderBy('vorname')
+        ->get()
+        ->map(function($mitarbeiter) {
+            // Nur die letzte Beurteilung für jeden Mitarbeiter auswählen
+            $mitarbeiter->beurteilung = $mitarbeiter->beurteilung->first();
+            return $mitarbeiter;
+        });
+
+
+
+        return $query;
+    }
+
+    public function getMitarbeiterMitOffenenBeurteilungen2($mitarbeiterID)
+    {
+        $mitarbeiterArr = $this->getMitarbeiterArrayUnterBeurteiler2($mitarbeiterID);
+
+        try {
+            $order = ['mm.name', 'mm.vorname'];
+
+            $bedingung_regelbeurteilung_nicht_angefangen = 'bu.abgeschlossen1 = 0';
+            $bedingung_nichtausgeschieden = 'm.ausgeschieden = 0';
+            $adapter = $this->getAdapter();
+            $select = $adapter
+                ->select()
+                ->from(['m' => 'mitarbeiter'], [])
+                ->join(['st1' => 'stellen'], 'st1.uebergeordnet = m.stelle', [])
+                ->join(['mm' => 'mitarbeiter'], 'mm.stelle = st1.id')
+                ->joinleft(['bu' => 'beurteilung'], 'bu.mitarbeiterid = mm.id', 'id as beurteilungid')
+                ->where("m.id = $mitarbeiterID")
+                ->where($bedingung_regelbeurteilung_nicht_angefangen)
+                ->where($bedingung_nichtausgeschieden)
+                ->order($order);
+            // echo $select->__toString();
+            $rows = $adapter->fetchAll($select);
+            return $rows;
+        } catch (Exception $e) {
+            echo 'Exception getOffeneMitarbeiterBeurteiler1: ', $e->getMessage(), "\n";
+            die();
+        }
+    }
+
+    public function getLastBeurteilungID($mitarbeiterID){
+
+        $beurteilung = new Beurteilung();
+        $row = $beurteilung->select('id')
+                ->where('mitarbeiterid', $mitarbeiterID)
+                ->orderBy('datum','desc')
+                ->first();
+        $result = $row ? $row->id : -1;
+
+        return $result;
+
+    }
+
+    public function TextB1StatusText(){
+
+        return   $this->beurteilung->abgeschlossen1 === 0 ? 'in Bearbeitung' : 'abgeschlossen';
+
+    }
+    public function TextB1Status() : BeurtStatus{
+        if ($this->beurteilung){
+        return $this->beurteilung->abgeschlossen1 === 0 ? BeurtStatus::edit : BeurtStatus::closed;
+        }
+        else
+            return BeurtStatus::none;
+    }
+
+    public function TextB2StatusText(){
+
+        return   $this->beurteilung->abgeschlossen2 == false ? 'in Bearbeitung' : 'abgeschlossen';
+    }
+
+
+
+    public function TextB2Status(){
+
+        $result = BeurtStatus::none;
+        if ($this->beurteilung){
+            if ( $this->beurteilung->abgeschlossen1 === 1 ) {
+                $result = $this->beurteilung->abgeschlossen2 === 0 ? BeurtStatus::edit : BeurtStatus::closed;
+            }
+            else
+                $result = BeurtStatus::wait;
+        }
+        return $result ;
+    }
+
+
+    public static function getMitarbeiterUeberStelleByStelle($mStelle){
+        // Ergebnis ist der Mitarbeiter der übergeordnetn Stelle
+        // Beispiel: Mitarbeiter Maik => Teamleiter Tom => Abteilungsleiter => Andreas
+        //           Stelle von Maik wird übergeben
+        //           In den B
+        // mStelle = variable vom Type $Stelle.
+        // Über der Stelle des aktuellen Mitarbeiters ist der Beurteiler 1
+        return Mitarbeiter::where('stelle', $mStelle->uebergeordnet)->first();
+    }
 
     /* NEU 12.07.2024
     public function getOffeneMitarbeiterBeurteiler1( $params )
@@ -295,17 +594,18 @@ NEU */
     {
         try {
             // Vorschlag ******************************************************
-            $mitarbeiterID = [ 79 ]; // frye // Beispiel-ID, setze hier die tatsächliche ID
+            $mitarbeiterID = [79]; // frye // Beispiel-ID, setze hier die tatsächliche ID
             //$mitarbeiterID = 21 ; // Blömer => Stelle=200 // Beispiel-ID, setze hier die tatsächliche ID
 
-            $bedingung_nichtausgeschieden = ['m1.ausgeschieden' => 0];  // Beispiel-Bedingung, passe diese an
-            $order = 'm1.name';  // Beispiel-Order, passe diese an
-echo "<p>";
+            $bedingung_nichtausgeschieden = ['m1.ausgeschieden' => 0]; // Beispiel-Bedingung, passe diese an
+            $order = 'm1.name'; // Beispiel-Order, passe diese an
+            echo '<p>';
             echo date('Y-m-d H:i:s');
-echo "</p>";
+            echo '</p>';
 
-            $query = DB::table('users as m1')->select('m1.id as M1-ID', 'st1.id as ST1-ID','m2.id as M2-ID', 'st2.id as ST2-ID', 'm3.id as M3-ID', 'st3.id as ST3-ID', 'm4.id as M4-ID', 'st4.id as ST4-ID','m5.id as M5-ID', 'st5.id as ST5-ID', 'm6.id as M6-ID', 'st6.id as ST6-ID')
-                ->leftJoin('stellen as st1', 'st1.id', '=', 'm1.stelle')         // ST1.id = 12 uebergeordnet = 6
+            $query = DB::table('users as m1')
+                ->select('m1.id as M1-ID', 'st1.id as ST1-ID', 'm2.id as M2-ID', 'st2.id as ST2-ID', 'm3.id as M3-ID', 'st3.id as ST3-ID', 'm4.id as M4-ID', 'st4.id as ST4-ID', 'm5.id as M5-ID', 'st5.id as ST5-ID', 'm6.id as M6-ID', 'st6.id as ST6-ID')
+                ->leftJoin('stellen as st1', 'st1.id', '=', 'm1.stelle') // ST1.id = 12 uebergeordnet = 6
                 ->leftJoin('stellen as st2', 'st2.uebergeordnet', '=', 'st1.id') // ST2.id = 13 uebergeordnet = 12
                 ->leftJoin('stellen as st3', 'st3.uebergeordnet', '=', 'st2.id') // ST3.id = NULL  => es gibt keine Stelle, die die ID 13 als übergeordnet hat
                 ->leftJoin('stellen as st4', 'st4.uebergeordnet', '=', 'st3.id')
@@ -321,8 +621,7 @@ echo "</p>";
             echo $query->toSql();
 
             $results = $query->get();
-                //->toSql();
-            
+            //->toSql();
 
             /*
              * ->leftJoin('beurteilung as b', function($join) {
@@ -336,7 +635,7 @@ echo "</p>";
              * ->get();
              */
             // Vorschlag ENDE ******************************************************
-/*
+            /*
             $adapter = $this->getAdapter();
             $select = $adapter
                 ->select()
@@ -390,7 +689,7 @@ echo "</p>";
             $select = $adapter
                 ->select()
                 ->from(['b' => 'beurteilung'], ['b.id as bid'])
-                ->joinleft(['m' => 'mitarbeiter'], 'm.id = b.mitarbeiterid', null)  // Mitarbeiter für die Sortierung
+                ->joinleft(['m' => 'mitarbeiter'], 'm.id = b.mitarbeiterid', null) // Mitarbeiter für die Sortierung
                 ->where($bedingung_zeitraum)
                 ->where($bedingung_mitarbeiter)
                 ->where($bedingung_veraltet)

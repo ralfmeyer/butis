@@ -12,8 +12,10 @@ new #[Layout('layouts.guest')] class extends Component
 {
     public string $name = '';
     public string $email = '';
+    public string $login = '';
     public string $password = '';
     public string $password_confirmation = '';
+    public int $kundennr = -1;
 
     /**
      * Handle an incoming registration request.
@@ -23,7 +25,9 @@ new #[Layout('layouts.guest')] class extends Component
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'login' => ['required', 'string', 'lowercase', 'max:255', 'unique:users'],
             'password' => ['required', 'string', 'confirmed', Rules\Password::defaults()],
+            'kundennr' => ['required', 'int']
         ]);
 
         $validated['password'] = Hash::make($validated['password']);
@@ -32,7 +36,7 @@ new #[Layout('layouts.guest')] class extends Component
 
         Auth::login($user);
 
-        $this->redirect(route('dashboard', absolute: false), navigate: true);
+        $this->redirect(route('startseite', absolute: false), navigate: true);
     }
 }; ?>
 
@@ -50,6 +54,13 @@ new #[Layout('layouts.guest')] class extends Component
             <x-input-label for="email" :value="__('Email')" />
             <x-text-input wire:model="email" id="email" class="block mt-1 w-full" type="email" name="email" required autocomplete="username" />
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
+        </div>
+
+        <!-- login -->
+        <div class="mt-4">
+            <x-input-label for="login" :value="__('Login')" />
+            <x-text-input wire:model="login" id="login" class="block mt-1 w-full" type="text" name="login" required autocomplete="login" />
+            <x-input-error :messages="$errors->get('login')" class="mt-2" />
         </div>
 
         <!-- Password -->

@@ -1,0 +1,13 @@
+01.09.2024 31.08.2025
+
+Hauptaufgabe ist es gute Arbeit zu machen.
+
+Test User 1 Arbeitsquantität unter80%
+Test User 1 Arbeitsqualität 80%
+Test User 1 Leistungsbereitschaft 100%
+Test User 1 Selbstständigkeit 120%
+Test User 1 Urteilsfähigkeit 100%
+Test User 1 Kundenorientierung 80%
+Test User 1 Teamverhalten/Kollegialität unter 80%
+Test User 1 Kritikfähigkeit/Kritikverhalten Leer
+Test User 1 ggf. Führungsverhalten 120% => Nicht vorhanden
