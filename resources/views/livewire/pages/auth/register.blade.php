@@ -36,6 +36,7 @@ new #[Layout('layouts.guest')] class extends Component
 
         Auth::login($user);
 
+
         $this->redirect(route('startseite', absolute: false), navigate: true);
     }
 }; ?>

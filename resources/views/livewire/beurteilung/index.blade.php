@@ -1,4 +1,4 @@
-<div class="w-content m-auto">
+<div class="w-4/5 m-auto">
 @php
     use App\Models\BeurtStatus;
 
@@ -103,17 +103,17 @@
                             <div><x-beurteilung-status :status="BeurtStatus::wait" /> </div>
                         </td>
                         <td class="be_col1">
-                            <a href="{{ route('beurteilung.create', ['mid' => $beurteilung->mMitarbeiter->id]) }}"
+                            <a href="{{ route('beurteilung.create', ['mid' => $beurteilung->mitarbeiter->id]) }}"
                                 class="hover:underline flex justify-end"
-                                title="Beurteilung von {{ $mitarbeiter->anrede }} {{ $mitarbeiter->name }} bearbeiten.">
+                                title="Beurteilung von {{ $beurteilung->mitarbeiter->anrede }} {{ $beurteilung->mitarbeiter->name }} bearbeiten.">
                                 <x-heroicon-o-document-plus class="h-5 be_icon_color" />
 
                             </a>
                         </td>
-                        <td class="be_col2">{{ $beurteilung->mMitarbeiter->name }}, {{ $beurteilung->mMitarbeiter->vorname }}</td>
-                        <td class="be_col1">{{ $beurteilung->mMitarbeiter->personalnr }}</td>
-                        <td class="be_col1">{{ $beurteilung->mMitarbeiter->nbeurteilung }}</td>
-                        <td class="be_col5">{{ $beurteilung->mMitarbeiter->bemerkung }}</td>
+                        <td class="be_col2">{{ $beurteilung->mitarbeiter->name }}, {{ $beurteilung->mitarbeiter->vorname }}</td>
+                        <td class="be_col1">{{ $beurteilung->mitarbeiter->personalnr }}</td>
+                        <td class="be_col1">{{ $beurteilung->mitarbeiter->nbeurteilung }}</td>
+                        <td class="be_col5">{{ $beurteilung->mitarbeiter->bemerkung }}</td>
                     </tr>
                 @endforeach
             </table>
@@ -257,15 +257,16 @@
                                 <div><x-beurteilung-status :status="$beurteilung->B2Status()" /> </div>
                             </td>
                             <td class="be_col1">
-                                <a href="{{ route('beurteilung.show', ['id' => $beurteilung->id]) }}"
+                                <!-- a href="{{ route('beurteilung.show', ['id' => $beurteilung->id]) }}" -->
+                                <a href="{{ route('beurteilung.create', ['mid' => $beurteilung->mitarbeiterid]) }}"
                                     class="hover:underline flex justify-end" title="Beurteilung anzeigen">
                                     <x-carbon-document-view class="h-5 be_icon_color" />
                                 </a>
                             </td>
-                            <td class="be_col2">{{ $beurteilung->mMitarbeiter->name }}, {{ $beurteilung->mMitarbeiter->vorname }}</td>
-                            <td class="be_col1">{{ $beurteilung->mMitarbeiter->personalnr }}</td>
-                            <td class="be_col1">{{ $beurteilung->mMitarbeiter->nbeurteilung }}</td>
-                            <td class="be_col5">{{ $beurteilung->mMitarbeiter->bemerkung }}</td>
+                            <td class="be_col2">{{ $beurteilung->mitarbeiter->name }}, {{ $beurteilung->mitarbeiter->vorname }}</td>
+                            <td class="be_col1">{{ $beurteilung->mitarbeiter->personalnr }}</td>
+                            <td class="be_col1">{{ $beurteilung->mitarbeiter->nbeurteilung }}</td>
+                            <td class="be_col5">{{ $beurteilung->mitarbeiter->bemerkung }}</td>
                         </tr>
                     @endforeach
                 </table>
@@ -319,7 +320,7 @@
                     <td class="be_col5">{{ $mitarbeiter->bemerkung }}</td>
                 </tr>
             @endforeach
-
+            </table>
         @endif
     </div>
 

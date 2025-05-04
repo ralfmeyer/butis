@@ -23,11 +23,20 @@ new #[Layout('layouts.guest')] class extends Component
         $this->validate([
             'personalnr' => ['required', 'integer' ],
         ]);
-
+        session()->flash('status', 'Bitte warten ...');
+        /* ALT
         $status = Password::sendResetLink(
             // $this->only('email')
             $this->only('personalnr')
         );
+        */
+
+        /* NEU */
+        $status = Password::broker()->sendResetLink(
+            // $this->only('email') // Die E-Mail-Adresse des Benutzers
+            $this->only('personalnr')
+        );
+        /* NEU ENDE */
 
         if ($status != Password::RESET_LINK_SENT) {
             $this->addError('email', __($status));

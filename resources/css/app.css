@@ -214,3 +214,7 @@ th.be_create_k_col1, th.be_create_k_col2, th.be_create_k_col3, th.be_create_k_co
 select.bc_create{
     @apply h-7 px-2 py-0  rounded align-middle w-40 m-2
 }
+
+.xcloak{
+    
+}

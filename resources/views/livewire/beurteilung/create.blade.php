@@ -1,9 +1,9 @@
 <div class="mx-4" x-data="{
     activeUser: @entangle('activeUser'),
     regelbeurteilung: @entangle('regelbeurteilung'),
-    showForm: @entangle('showForm'),
+    showTextarea: @entangle('showTextarea'),
     beurteilungszeitpunkt: @entangle('beurteilungszeitpunkt')
-}">
+}" x-cloak >
 
 
     @php
@@ -128,7 +128,7 @@
                                     class="be_create_radiogroup">
                                 Ende
                             </label>
-                            Akt: {{ $beurteilungszeitpunkt }}
+
                         </div>
                     </div>
                 </div>
@@ -138,8 +138,21 @@
             <div class="bc_create_border p-2 mb-2">
                 <div class="grid grid-cols-1">
                     <div class="text-left pr-2">Kurze Beschreibung des Aufgabenbereichs</div>
-                    <textarea :disabled="activeUser !== 1" class="ed_input_textbox bg-transparent" wire:model="aufgabenbereich"
-                        type="text" id="aufgabenbereich" rows="2"></textarea>
+                        <!-- Edit Large -->
+                        <div class="flex flex-row">
+
+                                <div class="w-10">
+                                    <button type="button" wire:click="doShowTextarea('aufgabenbereich')" ><x-fluentui-desktop-edit-24-o class="w-6 h-6"/></button>
+                                </div>
+
+                            <div class="flex w-full">
+                                <textarea :disabled="activeUser !== 1" class="ed_input_textbox bg-transparent" wire:model="aufgabenbereich"
+                                type="text" id="aufgabenbereich" rows="2"></textarea>
+                            </div>
+
+                        </div>
+                        <!-- Edit Large Ende -->
+
                 </div>
             </div>
         </div>
@@ -175,13 +188,11 @@
                         $red = '';
                          if ($details[$key]['w']['beurteiler1noteError']) $red = "bg-red-500 text-xl";
                     @endphp
-                    <tr class="be_create_k_trenner_small {{ $red }} border-l border-r border-sky-500">
+                    <tr class="be_create_k_trenner_small {{ $red }} border-l border-r ">
                         <td rowspan="@if ($activeUser == 1) 3 @else 6 @endif" colspan="2"
                             class="be_create_k_col1 pb-10 bc_create_col_active be_create_k_trenner_blue ">
                             @if ($details[$key]['w']['beurteiler1noteError'] === true)
                                 <div class="text-red-500 text-right">{{ $textBewertungFehlt }}</div>
-                            @else
-
                             @endif
                             <div class="be_create_k_head">{{ $detail['k']->ueberschrift }}</div>
                             <div class="be_create_k_text">{{ $detail['k']->text1 }}</div>
@@ -229,6 +240,9 @@
                     <tr class=" border-l border-r border-sky-500">
                         <td colspan="6" :disabled="activeUser !== 1"
                             class="@if ($activeUser == 1) bc_create_col_active @else bc_create_col_inactive @endif disabled:text-slate-200">
+                            @if ($details[$key]['w']['beurteiler2noteError'] === true)
+                                <div class="text-red-500 text-right">{{ $textBewertungFehlt }}</div>
+                            @endif
                             Bemerkung zur {{ $detail['k']->ueberschrift }}
                             @if ($details[$key]['w']['beurteiler1bemerkungError'] ?? false)
                                 <div
@@ -241,31 +255,44 @@
                     <tr class="@if ($activeUser === 1) be_create_k_trenner_blue @endif border-l border-r border-sky-500 "  >
                         <td colspan="5"
                             class="@if ($activeUser == 1) bc_create_col_active @else bc_create_col_inactive @endif pr-3">
-                            <textarea :disabled="activeUser !== 1" class="ed_input_textbox bg-transparent "
-                                wire:model.live="details.{{ $detail['k']->id }}.w.beurteiler1bemerkung" type="text" id="beurteiler1bemerkung"
-                                rows="2"></textarea>
+
+                                <!-- Edit Large -->
+                                <div class="flex flex-row">
+                                    @if ($activeUser === 1)
+                                        <div class="w-10">
+                                            <button type="button" wire:click="doShowTextarea('details.{{ $detail['k']->id }}.w.beurteiler1bemerkung')" ><x-fluentui-desktop-edit-24-o class="w-6 h-6"/></button>
+                                        </div>
+                                    @endif
+                                    <div class="flex w-full">
+                                        <textarea :disabled="activeUser !== 1" class="ed_input_textbox bg-transparent "
+                                        wire:model.live="details.{{ $detail['k']->id }}.w.beurteiler1bemerkung" type="text" id="beurteiler1bemerkung"
+                                        rows="2"></textarea>
+                                    </div>
+
+                                </div>
+                                <!-- Edit Large Ende -->
                         </td>
                     </tr>
                     @if ($activeUser === 2)
-                        <tr class="be_create_k_trenner">
+                        <tr class="be_create_k_trenner border-l border-r border-sky-500">
                             <td
-                                class="be_create_k_col2 @if ($activeUser == 2) bc_create_col_active @else bc_create_col_inactive @endif">
+                                class="be_create_k_col2 @if ($activeUser == 2) bc_create_col_active @else bc_create_col_inactive @endif ">
                                 <label for="details.{{ $detail['k']->id }}.w.beurteiler2note_1">unter 80%</label>
-                                <input type="radio" wire:model="details.{{ $detail['k']->id }}.w.beurteiler2note"
+                                <input type="radio" wire:model.live="details.{{ $detail['k']->id }}.w.beurteiler2note"
                                     id="details.{{ $detail['k']->id }}.w.beurteiler2note_1" value="1"
                                     :disabled="activeUser !== 2" class="disabled:text-slate-200">
                             </td>
                             <td
                                 class="be_create_k_col3 @if ($activeUser == 2) bc_create_col_active @else bc_create_col_inactive @endif">
                                 <label for="details.{{ $detail['k']->id }}.w.beurteiler2note_2">80%</label>
-                                <input type="radio" wire:model="details.{{ $detail['k']->id }}.w.beurteiler2note"
+                                <input type="radio" wire:model.live="details.{{ $detail['k']->id }}.w.beurteiler2note"
                                     id="details.{{ $detail['k']->id }}.w.beurteiler2note_2" value="2"
                                     :disabled="activeUser !== 2" class="disabled:text-slate-200">
                             </td>
                             <td
                                 class="be_create_k_col4 @if ($activeUser == 2) bc_create_col_active @else bc_create_col_inactive @endif">
                                 <label for="details.{{ $detail['k']->id }}.w.beurteiler2note_3">100%</label>
-                                <input type="radio" wire:model="details.{{ $detail['k']->id }}.w.beurteiler2note"
+                                <input type="radio" wire:model.live="details.{{ $detail['k']->id }}.w.beurteiler2note"
                                     id="details.{{ $detail['k']->id }}.w.beurteiler2note_3" value="3"
                                     :disabled="activeUser !== 2" class="disabled:text-slate-200">
                             </td>
@@ -275,7 +302,7 @@
                                     <div>
                                         <label for="details.{{ $detail['k']->id }}.w.beurteiler2note_4">120%</label>
                                         <input type="radio"
-                                            wire:model="details.{{ $detail['k']->id }}.w.beurteiler2note"
+                                            wire:model.live="details.{{ $detail['k']->id }}.w.beurteiler2note"
                                             id="details.{{ $detail['k']->id }}.w.beurteiler2note_4" value="4"
                                             :disabled="activeUser !== 2" class="disabled:text-slate-200">
                                     </div>
@@ -284,7 +311,7 @@
                                 </div>
                             </td>
                         </tr>
-                        <tr>
+                        <tr class="border-l border-r border-sky-500">
 
                             <td colspan="6" :disabled="activeUser !== 2"
                                 class="@if ($activeUser == 2) bc_create_col_active @else bc_create_col_inactive @endif disabled:text-slate-200">
@@ -297,20 +324,35 @@
                             @endif
                             </td>
                         </tr>
-                        <tr>
-                            <td colspan="5" class="be_create_k_trenner_blue pr-3">
-                                <textarea :disabled="activeUser !== 2" class="ed_input_textbox"
-                                    wire:model="details.{{ $detail['k']->id }}.w.beurteiler2bemerkung" type="text" id="beurteiler2bemerkung"
-                                    rows="2"></textarea>
+                        <tr class="border-l border-r border-sky-500">
+                            <td colspan="6" class="be_create_k_trenner_blue pr-3">
+                                <!-- Edit Large -->
+                                <div class="flex flex-row">
+                                    @if ($activeUser === 2)
+                                        <div class="w-10">
+                                            <button type="button" wire:click="doShowTextarea('details.{{ $detail['k']->id }}.w.beurteiler2bemerkung')" ><x-fluentui-desktop-edit-24-o class="w-6 h-6"/></button>
+                                        </div>
+                                    @endif
+                                    <div class="flex w-full">
+                                        <textarea :disabled="activeUser !== 2" class="ed_input_textbox"
+                                            wire:model="details.{{ $detail['k']->id }}.w.beurteiler2bemerkung" type="text" id="beurteiler2bemerkung"
+                                            rows="2"></textarea>
+                                    </div>
+                                </div>
+                                <!-- Edit Large Ende -->
                             </td>
                         </tr>
                         @endif
                     @endif
                 @endforeach
+            </table>
+            <table  class="m-auto w-content" >
                 <tr class=" border-l border-r border-sky-500">
 
                     <td colspan="3"
-                        class="text-center @if ($activeUser == 1) bc_create_col_active @else bc_create_col_inactive @endif disabled:text-slate-200">
+                        class=" text-center
+                            @if ($activeUser == 1) bc_create_col_active @else bc_create_col_inactive @endif disabled:text-slate-200">
+
                         @if ($activeUser == 1)
                             <span class="font-bold">Gesamtnote als Beurteiler 1:&nbsp;</span>
                             @if ($gesamtnote1Error ===true)<span class="text-red-500">(fehlt)</span> @endif
@@ -328,9 +370,10 @@
                         </select>
                     </td>
                     <td colspan="3"
-                        class="text-center @if ($activeUser == 2) bc_create_col_active @else bc_create_col_inactive @endif disabled:text-slate-200">
+                        class=" text-center @if ($activeUser == 2) bc_create_col_active @else bc_create_col_inactive @endif disabled:text-slate-200">
                         @if ($activeUser == 2)
                             <span class="font-bold"> Gesamtnote von Dir als Beurteiler 2:&nbsp; </span>
+                            @if ($gesamtnote2Error ===true)<span class="text-red-500">(fehlt)</span> @endif
                         @else
                             Gesamtnote von Beurteiler 2: {{ $mbeurteiler2->anrede }} {{ $mbeurteiler2->vorname }}
                             {{ $mbeurteiler2->name }}
@@ -347,8 +390,7 @@
 
                     </td>
                 </tr>
-            </table>
-            <table  class="m-auto w-content" >
+
                 <tr class=" border-l border-r border-t rounded-md border-sky-500"  x-show="beurteilungszeitpunkt == 0">
                     <td colspan="5"
                         class="px-2 @if ($activeUser == 1) bc_create_col_active @else bc_create_col_inactive @endif disabled:text-slate-200">
@@ -359,7 +401,7 @@
                     </td>
                 </tr>
 
-                <tr class=" border-l border-r border-sky-500">
+                <tr class=" border-l border-r border-sky-500" x-show="beurteilungszeitpunkt == 0">
                     <td colspan="3"
                         class="px-2 @if ($activeUser == 1) bc_create_col_active @else bc_create_col_inactive @endif disabled:text-slate-200">
                         <div class="flex flex-col w-1/2 m-auto">
@@ -378,7 +420,7 @@
                             <div class="flex flex-row">
                                 <label>
                                     <input type="radio" wire:model="geeignet1" id="geeignet1" value="2"
-                                    :disabled="activeUser !== 1" class=" disabled:text-slate-200 be_create_radiogroup"> nnach heutigem Stand nicht geeignet.
+                                    :disabled="activeUser !== 1" class=" disabled:text-slate-200 be_create_radiogroup"> nach heutigem Stand nicht geeignet.
                                 </label>
                             </div>
                         </div>
@@ -402,7 +444,7 @@
                             <div class="flex flex-row">
                                 <label>
                                     <input type="radio" wire:model="geeignet2" id="geeignet1" value="2"
-                                    :disabled="activeUser !== 2" class=" disabled:text-slate-200 be_create_radiogroup"> nnach heutigem Stand nicht geeignet.
+                                    :disabled="activeUser !== 2" class=" disabled:text-slate-200 be_create_radiogroup"> nach heutigem Stand nicht geeignet.
                                 </label>
                             </div>
                         </div>
@@ -429,8 +471,20 @@
                             Begründung muss angegeben werden
                         </div>
                         @endif
-                        <textarea :disabled="activeUser !== 1" class="ed_input_textbox" wire:model.live="gesamtnote1begruendung" type="text"
-                            id="gesamtnote1begruendung" rows="2"></textarea>
+
+                        <!-- Edit Large -->
+                        <div class="flex flex-row">
+                            @if ($activeUser === 1)
+                                <div class="w-10">
+                                    <button type="button" wire:click="doShowTextarea('gesamtnote1begruendung')"><x-fluentui-desktop-edit-24-o class="w-6 h-6"/></button>
+                                </div>
+                            @endif
+                            <div class="flex w-full">
+                                <textarea :disabled="activeUser !== 1" class="ed_input_textbox" wire:model.live="gesamtnote1begruendung" type="text"
+                                    id="gesamtnote1begruendung" rows="2"></textarea>
+                            </div>
+                        </div>
+                        <!-- Edit Large Ende -->
                     </td>
                     <td colspan="3"
                         class="px-2 be_create_k_trenner_blue @if ($activeUser == 2) bc_create_col_active @else bc_create_col_inactive @endif disabled:text-slate-200">
@@ -440,8 +494,21 @@
                             Begründung muss angegeben werden
                         </div>
                         @endif
-                        <textarea :disabled="activeUser !== 2" class="ed_input_textbox" wire:model.live="gesamtnote2begruendung" type="text"
-                            id="gesamtnote2begruendung" rows="2"></textarea>
+
+                        <!-- Edit Large -->
+                        <div class="flex flex-row">
+                            @if ($activeUser === 2)
+                                <div class="w-10">
+                                    <button type="button" wire:click="doShowTextarea('gesamtnote2begruendung')"><x-fluentui-desktop-edit-24-o class="w-6 h-6"/></button>
+                                </div>
+                            @endif
+                            <div class="flex w-full">
+                                <textarea :disabled="activeUser !== 2" class="ed_input_textbox" wire:model.live="gesamtnote2begruendung" type="text"
+                                id="gesamtnote2begruendung" rows="2"></textarea>
+                            </div>
+                        </div>
+                        <!-- Edit Large Ende -->
+
                     </td>
                 </tr>
                 <tr class=" border-l border-r border-sky-500">
@@ -457,13 +524,36 @@
                 <tr class=" border-l border-r border-sky-500">
                     <td colspan="3"
                         class="px-2 be_create_k_trenner_blue @if ($activeUser == 1) bc_create_col_active @else bc_create_col_inactive @endif pr-3">
-                        <textarea :disabled="activeUser !== 1" class="ed_input_textbox" wire:model="zusatz1" type="text" id="zusatz1"
-                            rows="2"></textarea>
+                        <!-- Edit Large -->
+                        <div class="flex flex-row">
+                            @if ($activeUser === 1)
+                                <div class="w-10">
+                                    <button type="button" wire:click="doShowTextarea('zusatz1')"><x-fluentui-desktop-edit-24-o class="w-6 h-6"/></button>
+                                </div>
+                            @endif
+                            <div class="flex w-full">
+                                <textarea :disabled="activeUser !== 1" class="ed_input_textbox" wire:model="zusatz1" type="text" id="zusatz1"
+                                    rows="2"></textarea>
+                            </div>
+                        </div>
+                        <!-- Edit Large Ende -->
                     </td>
                     <td colspan="3"
                         class="px-2 be_create_k_trenner_blue @if ($activeUser == 2) bc_create_col_active @else bc_create_col_inactive @endif">
-                        <textarea :disabled="activeUser !== 2" class="ed_input_textbox" wire:model="zusatz2" type="text" id="zusatz2"
-                            rows="2"></textarea>
+                        <!-- Edit Large -->
+                        <div class="flex flex-row">
+                            @if ($activeUser === 2)
+                                <div class="w-10">
+                                    <button type="button" wire:click="doShowTextarea('zusatz2')"><x-fluentui-desktop-edit-24-o class="w-6 h-6"/></button>
+                                </div>
+                            @endif
+                            <div class="flex w-full">
+                                <textarea :disabled="activeUser !== 2" class="ed_input_textbox" wire:model="zusatz2" type="text" id="zusatz2"
+                                    rows="2"></textarea>
+                            </div>
+                        </div>
+                        <!-- Edit Large Ende -->
+
                     </td>
                 </tr>
                 <tr class=" border-l border-r border-sky-500">
@@ -476,11 +566,21 @@
                             bewußt Ihre Entscheidung</span><br>
                         <span class="font-bold">Kommando: <input type="text" wire:model="kommando"
                                 class="text-center text-lg"></span><br>
-                        Geben Sie das Wort "abgeschlossen", um die Bewertung abzuschliessen.<br><br>
+                        Geben Sie das Wort "abgeschlossen" ein, um die Bewertung abzuschliessen.<br>
+                        @if ($activeUser === 2)
+                        Geben Sie das Wort "zurueck" ein, um die Bewertung an Beurteiler 1 zurückzugeben.<br>
+                        @endif
+                        <br>
 
-                        <div class="@if ($activeUser == 1 && $beurteiler1Abgabebereit) text-green-600 @else text-orange-500 @endif ">
-                        {{ $beurteiler1AbgabebereitText }}
-                        </div>
+                        @if ($activeUser === 1)
+                            <div class="{{ $beurteiler1Abgabebereit === true ? 'text-green-600' : 'text-orange-500' }} ">
+                            {{ $beurteiler1AbgabebereitText }}
+                            </div>
+                        @else
+                            <div class="{{ $beurteiler2Abgabebereit === true ? 'text-green-600' : 'text-orange-500' }} ">
+                                {{ $beurteiler2AbgabebereitText }}
+                            </div>
+                        @endif
                     </td>
                     <td colspan="3" class="px-2 be_create_k_trenner_blue bc_create_col_active ">
                         <span class="text-lg">Bemerkung an Beurteiler 1 bzw. an Beurteiler 2</span><br>
@@ -507,13 +607,13 @@
                     <x-heroicon-m-bars-3-bottom-left class="w-6 mr-2" />
                     <span>
                         <span class="text-xl font-bold mr-10">Bemerkungen der Beurteiler</span>
-                        @if ($meldungen->count() > 0)
+                        @if (!empty($meldungen) && $meldungen->count() > 0)
                             <span class="text-xs">(neueste oben)</span>
                         @endif
                     </span>
                 </div>
             </div>
-            @if ($meldungen->count() > 0)
+            @if (!empty($meldungen) && $meldungen->count() > 0)
             @foreach ($meldungen as $meldung)
             <div class="flex flex-row mb-4">
                 <div class="w-1/2 @if ($meldung->mitarbeiter === $this->mbeurteiler1->id ) mr-auto @else ml-auto @endif border border-sky-400 bg-sky-200 rounded-3xl p-4 flex flex-col shadow-md shadow-gray-600">
@@ -544,19 +644,6 @@
             @endif
         </div>
 
-        <!--
-        <div class="relative bg-gray-100 w-4/5 h-screen overflow-y-auto">
-            <div class="fixed bottom-0 w-32 right-[20%] bg-gray-500 text-white py-2 z-10 mb-1 rounded-md text-center">
-                <a href="{{ route('beurteilung') }}">Zurück</a>
-            </div>
-        </div>
-
-        <div class="relative bg-gray-100 w-4/5 h-screen overflow-y-auto">
-            <button type="submit" class="fixed bottom-0 w-52 right-[10%] bg-blue-500 text-white py-2 z-10 mb-1 rounded-md">
-                Änderungen übernehmen
-            </button>
-        </div
-        -->
 
         <div class="relative bg-gray-100 w-4/5 h-screen overflow-y-auto">
             <!-- Langer Inhalt, der scrollbar ist -->
@@ -576,9 +663,15 @@
             </div>
         </div>
 
-    </form>
+
+        <x-my-textarea :editFld="$activeTextarea" :editFldHeader="$this->getLabelForField($activeTextarea)" x-show="showTextarea" />
 
 
+
+
+
+
+</form>
 
 
     <!-- x-my-form
@@ -593,6 +686,15 @@
         });
     </script>
 
+<script>
+    window.addEventListener('beforeunload', () => {
+        console.log('beforeunload wurde ausgelöst');
+        document.querySelectorAll('.xcloak').forEach(el => {
+            console.log('❌ .xcloak-Element gefunden und entfernt');
+            el.remove(); // oder: el.style.display = 'none';
+        });
+    });
+</script>
 
 
 </div>

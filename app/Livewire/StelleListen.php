@@ -56,19 +56,35 @@ class StelleListen extends Component
         {
             Log::error('StellenListen - Stellen ist nicht null' , [ -1]);
         }
-        $this->dataList = Stelle::select(['id', 'bezeichnung'])->where('fuehrungskompetenz', true)->get();
+        $this->dataList = Stelle::select(['id', 'bezeichnung'])->where('fuehrungskompetenz', true)->orderBy('bezeichnung')->get();
         //dd($this->stellen->first()->children[0]);
     }
 
     public function render()
     {
 
-
-       // $this->stellen = Stelle::with('uebergeordneteStelle')->orderBy('bezeichnung')->get();
-
-
-
         return view('livewire.stellen.listen');
+    }
+
+
+    public function neu()
+    {
+        $this->resetFormData();
+        $this->showForm = true;
+        $this->isModified = false ;
+    }
+
+    private function resetFormData()
+    {
+        $this->id = '';
+        $this->stelle = null;
+        $this->kennzeichen = '';
+        $this->bezeichnung = '';
+        $this->ebene = 0;
+        $this->uebergeordnet = '';
+        $this->fuehrungskompetenz = false;
+        $this->l = 0;
+        $this->r = 0;
     }
 
 
@@ -76,15 +92,30 @@ class StelleListen extends Component
     {
 
         //$stelle->id = $this->id;
+        if ($this->id){
+
+        }
+
+        $this->validate([
+            'kennzeichen' => 'required|string|max:255',
+            'bezeichnung' => 'required|string|max:255',
+            'ebene' => 'required|integer|min:0|max:8',
+            'uebergeordnet' => 'required|integer',
+        ]);
+
+        if (!$this->id) {
+            $this->stelle = new Stelle();
+        }
+
         $this->stelle->kennzeichen = $this->kennzeichen;
         $this->stelle->bezeichnung = $this->bezeichnung ;
         $this->stelle->ebene = $this->ebene ;
         $this->stelle->uebergeordnet = $this->uebergeordnet;
-        $this->stelle->fuehrungskompetenz = $this->fuehrungskompetenz;
+        $this->stelle->fuehrungskompetenz = ($this->fuehrungskompetenz === false) ? 0 : 1 ;
         $this->stelle->l = $this->l;
         $this->stelle->r = $this->r;
         $this->stelle->save();
-        $this->isModified = false ;
+
         Log::info($this->stelle);
         $this->showForm = false;
         // $this->dispatch('doMessage', ['Änderungen gespeichert']);
@@ -104,7 +135,7 @@ class StelleListen extends Component
 
         $this->showForm = true;
         $this->id = $id;
-        $this->stelle = Stelle::find($this->id);
+        $this->stelle = Stelle::findOrFail($this->id);
 
         Log::info( 'Mount Stelle: ', [ $this->stelle ]);
 
@@ -125,7 +156,7 @@ class StelleListen extends Component
         $this->fuehrungskompetenz = $this->stelle->fuehrungskompetenz;
         $this->l = $this->stelle->l;
         $this->r = $this->stelle->r;
-        $this->isModified = false ;
+        $this->isModified = true ;
 
 
 

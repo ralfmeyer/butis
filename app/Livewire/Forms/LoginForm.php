@@ -33,7 +33,39 @@ class LoginForm extends Form
     public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
-        
+
+        try {
+            // Prüfe, ob die Authentifizierung funktioniert
+            if (! Auth::attempt($this->only(['personalnr', 'password']), $this->remember)) {
+                RateLimiter::hit($this->throttleKey());
+
+                throw ValidationException::withMessages([
+                    'form.personalnr' => trans('auth.failed'),
+                ]);
+            }
+        } catch (\RuntimeException $exception) {
+            // Fehler beim Passwort (nicht bcrypt)
+            if (str_contains($exception->getMessage(), 'does not use the Bcrypt algorithm')) {
+                throw ValidationException::withMessages([
+                    'form.password' => trans('auth.password_format_error'), // Neue Übersetzung für diesen Fehler anlegen
+                ]);
+            }
+
+            // Allgemeiner Fehler
+            throw ValidationException::withMessages([
+                'form.general' => trans('auth.general_error'), // Übersetzung für allgemeinen Fehler
+            ]);
+        }
+
+        // RateLimiter zurücksetzen, falls erfolgreich
+        RateLimiter::clear($this->throttleKey());
+    }
+
+
+    public function authenticateXY(): void
+    {
+        $this->ensureIsNotRateLimited();
+
         if (! Auth::attempt($this->only(['personalnr', 'password']), $this->remember)) {
         // if (! Auth::attempt($this->only(['email', 'password']), $this->remember)) {
             RateLimiter::hit($this->throttleKey());

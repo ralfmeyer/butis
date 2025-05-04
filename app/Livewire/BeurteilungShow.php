@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+
 use Livewire\Component;
 use App\Models\Beurteilung;
 use App\Models\Mitarbeiter;
@@ -10,12 +11,17 @@ use App\Models\Kriterien;
 use App\Models\Bdetails;
 
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+
 
 use function PHPUnit\Framework\isNull;
 
 class BeurteilungShow extends Component
 {
+
+    public $beurteilungen = [];
+
     public $beurteilung;
     public $mitarbeiterid;
     public $mitarbeiterfuehrung;
@@ -73,11 +79,63 @@ class BeurteilungShow extends Component
     public $bdetails;
     public $details;
 
+    public $selectedBId;
 
-    public function mount($id)
+    public $zeigeMessage ;
+
+    public $userId;
+
+
+    public function mount($beurteilungId, $mitarbeiterId = null) {
+
+        $this->userId = Auth::id();
+
+
+        $this->selectedBId = -1;
+        $this->zeigeMessage = false ;
+
+
+
+
+        if ($beurteilungId === null){
+            $this->beurteilungen = Beurteilung::where('mitarbeiterid', (int)$mitarbeiterId)
+                ->orderBy('datum','desc')->get();
+
+            if (count($this->beurteilungen) > 0){
+                $beurteilungId = $this->beurteilungen[0]->id;
+                $this->selectBeurteilung($beurteilungId);
+            }
+        }
+        else {
+            $mid = Beurteilung::where('id', (int)$beurteilungId)->pluck('mitarbeiterid')->first();
+
+            $this->beurteilungen = Beurteilung::where('mitarbeiterid', (int)$mid)
+                ->orderBy('datum','desc')->get();
+
+            $this->selectBeurteilung($beurteilungId);
+
+        }
+
+        if ($this->selectedBId === -1) {
+            Log::info('Letzte Beurteilung wurde nicht gefunden!');
+            session()->flash('message', 'Es sind keine Beurteilungen vorhanden.');
+            return redirect()->route('mitarbeiter');
+        }
+
+
+
+    }
+
+
+    public function render()
     {
+        return view('livewire.beurteilung.show');
+    }
 
-        $beurteilung = Beurteilung::findOrFail($id);
+    public function selectBeurteilung($beurteilungId){
+        $this->selectedBId = -1;
+        $beurteilung = Beurteilung::findOrFail($beurteilungId);
+        $this->selectedBId = $beurteilungId;
 
         $this->beurteilung = $beurteilung;
         $this->mitarbeiterid = $beurteilung->mitarbeiterid;
@@ -125,25 +183,35 @@ class BeurteilungShow extends Component
         $this->beurteiler2 = Mitarbeiter::find($this->beurteiler2);
 
 
-        $this->beurteiler1aktiv = true ;
-        $this->beurteiler2aktiv = false ;
+        $this->beurteiler1aktiv = $this->beurteiler1->id === Auth::id();
+
+        $this->beurteiler2aktiv = $this->beurteiler2->id === Auth::id();
+
+
 
         $this->stelleB1 = Stelle::find($this->beurteiler1->stelle);
         $this->stelleB2 = Stelle::find($this->beurteiler2->stelle);
 
 
         $this->grenze = \DateTime::createFromFormat('Y-m-d', Env('GRENZE'));
-
+        $this->version = $beurteilung->version;
+        /*
         if ($beurteilung->datum >= $this->grenze) {
-            $this->version = 2;
+
         }
         else
             $this->version = 1;
+        */
 
-        if ($this->version == 2)
+        if ($this->version == 2){
             $this->kriterien = Kriterien::where('art', 10 )->orderBy('nummer')->get();
+            Log::info('Version 2');
+        }
         else
+        {
             $this->kriterien = Kriterien::where('art', 0 )->orderBy('nummer')->get();
+            Log::info('Version 1');
+        }
 
         $this->details = [];
         foreach ($this->kriterien as $kriterium){
@@ -195,17 +263,24 @@ class BeurteilungShow extends Component
                     ]
                 ];
             }
-
-
-
         }
-
     }
 
+    public function beurteilungWiederOeffnen($beurteilungId){
+        $beurteilung = Beurteilung::findOrFail($beurteilungId);
+        $beurteilung->abgeschlossen2 = 0 ;
+        $beurteilung->save();
+        $this->dispatch('seiteNeuLaden');
+    }
 
-    public function render()
-    {
-        return view('livewire.beurteilung.show');
+    public function doPrint(){
+        // Setzt eine Session-Variable, um den Zugriff zu erlauben
+        session()->put('allow_print', true);
+        session()->put('print_data', $this->beurteilung);
+
+        $this->dispatch('openPrintWindow', route('print.page'));
+        // return redirect()->route('print.page');
+
     }
 
 }

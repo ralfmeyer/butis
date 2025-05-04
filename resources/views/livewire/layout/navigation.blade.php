@@ -17,7 +17,7 @@ new class extends Component
     }
 }; ?>
 <div>
-<nav x-data="{ open: false }" class="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 shadow-md shadow-gray-300 mb-6">
+<nav x-data="{ open: false }" class="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700 shadow-md shadow-gray-300 mb-6 print:hidden">
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
@@ -58,6 +58,11 @@ new class extends Component
                     </div>
                 @endif
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+                    <x-nav-link :href="route('auswertung')" :active="request()->routeIs('auswertung')" wire:navigate>
+                        {{ __('Auswertung') }}
+                    </x-nav-link>
+                </div>
+                <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                     <x-nav-link :href="route('beurteilung')" :active="request()->routeIs('beurteilung')" wire:navigate>
                         {{ __('Beurteilung') }}
                     </x-nav-link>
@@ -86,10 +91,15 @@ new class extends Component
                         </button>
                     </x-slot>
 
-
                     <x-slot name="content">
+                        @if (auth()->user() && auth()->user()->isAdmin())
+                        <x-dropdown-link :href="route('logs')" wire:navigate>
+                            {{ __('Log-Datei') }}
+                        </x-dropdown-link>
+                        @endif
+
                         <x-dropdown-link :href="route('profile')" wire:navigate>
-                            {{ __('Profile') }}
+                            {{ __('Profil') }}
                         </x-dropdown-link>
 
                         <!-- Authentication -->
@@ -134,6 +144,9 @@ new class extends Component
             @endauth
 
             <div class="mt-3 space-y-1">
+                <x-responsive-nav-link :href="route('logs')" wire:navigate>
+                    {{ __('Log-Datei') }}
+                </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('profile')" wire:navigate>
                     {{ __('Profile') }}
                 </x-responsive-nav-link>

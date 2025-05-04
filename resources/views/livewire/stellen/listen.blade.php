@@ -13,7 +13,11 @@
                 <tbody>
                     <tr>
                         <td colspan="2" class="font-semibold">
-                            Stelle ändern <span class="text-xs">(ID: {{ $id }})</span>
+                            @if ($isModified)
+                                Stelle ändern <span class="text-xs">(ID: {{ $id }})</span>
+                            @else
+                                Neue Stelle
+                            @endif
                         </td>
                     </tr>
                     <tr class="h-2">
@@ -26,7 +30,9 @@
                         <td class="pl-2">
                             <x-text-input wire:model="kennzeichen" type="text" id="kennzeichen" />
                             @error('kennzeichen')
-                                <br><span class="text-red-500 text-xl mt-3 block ">{{-- $message --}}</span>
+                            <div class="float-end">
+                                <span class="text-red-500 px-4 text-xs">{{ $message }}</span>
+                            </div>
                             @enderror
                         </td>
                     </tr>
@@ -37,12 +43,22 @@
                         </td>
                         <td class="pl-2">
                             <x-text-input wire:model="bezeichnung" type="text" id="bezeichnung" class="w-11/12" />
+                            @error('bezeichnung')
+                            <div class="float-end">
+                                <span class="text-red-500 px-4 text-xs">{{ $message }}</span>
+                            </div>
+                            @enderror
                         </td>
                     </tr>
                     <tr class="h-2">
                         <td class="pl-2"><x-input-label>Ebene</x-input-label></td>
                         <td class="pl-2">
                             <x-text-input wire:model="ebene" type="number" id="ebene" />
+                            @error('ebene')
+                            <div class="float-end">
+                                <span class="text-red-500 px-4 text-xs">{{ $message }}</span>
+                            </div>
+                            @enderror
                         </td>
                     </tr>
                     <tr class="h-2">
@@ -57,7 +73,11 @@
                                     <option value="{{ $item->id }}">{{ $item->bezeichnung }}</option>
                                 @endforeach
                             </select>
-
+                            @error('uebergeordnet')
+                            <div class="float-end">
+                                <span class="text-red-500 px-4 text-xs">{{ $message }}</span>
+                            </div>
+                            @enderror
 
                         </td>
 
@@ -97,7 +117,22 @@
 
     <div class="overflow-hidden shadow-2xl ring-2 ring-black ring-opacity-5 rounded-lg bg-blue-50 w-5/6 m-auto">
         <x-my-title>
-            {{ $ueberschrift }}
+            <div  class="flex flex-row items-center justify-between w-full h-8">
+                <div>
+                    {{ $ueberschrift }}
+                </div>
+                <div class="text-blue-400">
+                    <a href='#' wire:click='neu()' class="hover:text-blue-800 items-center flex flex-row">
+                        <div class="px-2 ">
+                            <x-fluentui-form-new-20-o class="h-8 " />
+                        </div>
+                        <div class="">
+                            Neu
+                        </div>
+                    </a>
+                </div>
+            </div>
+
         </x-my-title>
         <div class="px-2">
 

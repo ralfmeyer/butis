@@ -63,6 +63,11 @@ class User extends Authenticatable
         ];
     }
 
+    public function stelle()
+    {
+        return $this->belongsTo(Stelle::class, 'stelle', 'id');
+    }
+
     public function stelleBezeichnung()
     {
         return $this->belongsTo(Stelle::class, 'stelle');
@@ -71,5 +76,10 @@ class User extends Authenticatable
     public function isAdmin(){
         // dd($this->berechtigung);
         return $this->berechtigung === '1';
+    }
+
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new \App\Notifications\CustomResetPassword($token));
     }
 }

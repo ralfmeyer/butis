@@ -20,5 +20,6 @@ return [
     'Email Password Reset Link' => 'Kennwort vergessen Link',
     'passwords.throttled' => 'Kennwort bereits angefordert',
     'integer' => 'Fehler',
+    'password_format_error' => 'Das Kennwort ist im alten Format gespeichert und muss erneuert werden.'
 ];
 

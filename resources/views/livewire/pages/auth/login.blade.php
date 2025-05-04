@@ -36,6 +36,7 @@ new #[Layout('layouts.guest')] class extends Component
             <x-text-input wire:model="form.personalnr" id="personalnr" class="block mt-1 w-full" type="text" name="personalnr" required autofocus autocomplete="username" />
 
             <x-input-error :messages="$errors->get('form.personalnr')" class="mt-2" />
+
         </div>
 
         <!-- Password -->

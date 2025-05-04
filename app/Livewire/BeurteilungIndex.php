@@ -35,18 +35,7 @@ class BeurteilungIndex extends Component
 
     public function mount()
     {
-        //$this->beurteilungen = Beurteilung::all();
-    }
-
-
-
-    public function render()
-    {
-        Log::Info("BeurteilungIndex.php render()-Anfang");
-		// Grundeinstellungen
-
-
-		// Grunddaten
+        		// Grunddaten
 		//  $id 			= Auth::user()->id; // $this->view->loggedInID() ;
 		$this->datumVon		= date("d.m.Y", mktime(0, 0, 0, date("m")-2, 1,  date("Y")) );
 		$this->datumBis		= date('d.m.Y');
@@ -54,7 +43,7 @@ class BeurteilungIndex extends Component
 
 		if (Auth::user()){
 
-			log::info("app/Livewire/BeurteilungIndex.php => render() => Auth::user() wurde gefunden!");
+			//log::info("app/Livewire/BeurteilungIndex.php => render() => Auth::user() wurde gefunden!");
 
 			$this->user = Auth::user();
 
@@ -91,11 +80,24 @@ class BeurteilungIndex extends Component
         $this->aktiveBeurteilungenBeurteiler1 = $bbeurteilung->getAktiveVonBeurteiler1( $mitarbeiterBeurteiler1Array );
 
 
+
         $this->aktiveBeurteilungenBeurteiler2 = $bbeurteilung->getAktiveVonBeurteiler2( $mitarbeiterBeurteiler2Array );
 
+    }
 
-        Log::Info("BeurteilungIndex.php render()-Ende");
+
+
+    public function render()
+    {
+        //Log::Info("BeurteilungIndex.php render()-Anfang");
+		// Grundeinstellungen
+
+
+
+
+        //Log::Info("BeurteilungIndex.php render()-Ende");
         return view('livewire.beurteilung.index');
     }
+
 
 }

@@ -88,7 +88,7 @@ class BeurteilungCreate extends Component
     public $version = '';
 
     public $isModified;
-    public $showForm = false;
+    public $showTextarea = false;
 
     public $kommando;
 
@@ -102,6 +102,7 @@ class BeurteilungCreate extends Component
     public $beurteiler2Abgabebereit = false ;
 
     public $beurteiler1AbgabebereitText = '';
+    public $beurteiler2AbgabebereitText = '';
 
 
     public $activeUser;
@@ -110,8 +111,11 @@ class BeurteilungCreate extends Component
 
     public $meldungen;
 
-    public function mount($mid)
-    {
+    public $editFld;
+    public $editFldHeader;
+    public string $activeTextarea = 'aufgabenbereich';
+
+    public function mount($mid){
         $this->reset();
 
         $this->mmitarbeiter = Mitarbeiter::findOrFail($mid);
@@ -134,9 +138,14 @@ class BeurteilungCreate extends Component
         else
             if ( Auth::id() == $this->mbeurteiler2->id ){
                 $this->activeUser = 2;
+                // dd(var_dump(Beurteilung::where('mitarbeiterid', $mid)->where('abgeschlossen2', 0)->toRawSql()));
                 $this->mbeurteilung = Beurteilung::where('mitarbeiterid', $mid)->where('abgeschlossen2', 0)->first();
-                $this->version = $this->mbeurteilung->version ;
+
             }
+        //dd($this->mbeurteilung);
+
+        $this->grenze = \DateTime::createFromFormat('Y-m-d', '2022-01-01');
+
 
         if( is_null($this->mbeurteilung)){
             $this->mbeurteilung = new Beurteilung();
@@ -151,7 +160,7 @@ class BeurteilungCreate extends Component
 
 
 
-        $this->grenze = \DateTime::createFromFormat('Y-m-d', env('GRENZE'));
+
 
 
         $this->beurteilungToThis();
@@ -225,22 +234,21 @@ class BeurteilungCreate extends Component
 
     }
 
-    public function render()
-    {
-
+    public function render() {
+        //dd($this->details);
         return view('livewire.beurteilung.create');
     }
 
 
     public function thisToBeurteilung(){
 
-    // Validierung der Felder
-    $this->validate([
-        'mitarbeiterid' => 'required|integer',
-        'datum' => 'required|date',
-        'zeitraumvon' => 'required|date',
-        'zeitraumbis' => 'required|date|after:zeitraumvon',
-    ]);
+        // Validierung der Felder
+        $this->validate([
+            'mitarbeiterid' => 'required|integer',
+            'datum' => 'required|date',
+            'zeitraumvon' => 'required|date',
+            'zeitraumbis' => 'required|date|after:zeitraumvon',
+        ]);
 
         $this->mbeurteilung->id = $this->id;
         $this->mbeurteilung->mitarbeiterid = $this->mitarbeiterid;
@@ -266,7 +274,7 @@ class BeurteilungCreate extends Component
         $this->mbeurteilung->gesamtnote2begruendung = $this->gesamtnote2begruendung;
         $this->mbeurteilung->regelbeurteilung = $this->regelbeurteilung;
         $this->mbeurteilung->beurteilungszeitpunkt = $this->beurteilungszeitpunkt;
-        if ($this->mbeurteilung->regelbeurteilung === 0){
+        if ($this->mbeurteilung->regelbeurteilung != 2){
             $this->mbeurteilung->beurteilungszeitpunkt = -1;
         }
 
@@ -322,6 +330,9 @@ class BeurteilungCreate extends Component
         $this->gesamtnote2begruendung = $this->mbeurteilung->gesamtnote2begruendung;
         $this->regelbeurteilung = $this->mbeurteilung->regelbeurteilung;
         $this->beurteilungszeitpunkt = $this->mbeurteilung->beurteilungszeitpunkt;
+        if ($this->regelbeurteilung != 2){
+            $this->beurteilungszeitpunkt = -1;
+        }
         $this->abgeschlossen1 = $this->mbeurteilung->abgeschlossen1;
         $this->abgeschlossen2 = $this->mbeurteilung->abgeschlossen2;
         $this->veraltet = $this->mbeurteilung->veraltet;
@@ -379,14 +390,24 @@ class BeurteilungCreate extends Component
         // dd($this->mbeurteilung->ledit2);
     }
 
-    public function updated($name, $value)
-    {
+    public function updated($name, $value){
 
         // Sofortige Validierung bei jedem Update des Feldes
 
+        // 0 = Bedarf
+        // 1 = Regel
+        // 2 = Probezeit
+        //  Dann 0 Zur Hälfte oder 1 zum Ende
         if ($this->regelbeurteilung != 2){
             $this->beurteilungszeitpunkt = -1;
         }
+        elseif ($this->regelbeurteilung == 2){
+            Log::info('beurteilungszeitpunkt', [$this->beurteilungszeitpunkt]);
+            if ($this->beurteilungszeitpunkt === -1){
+                $this->beurteilungszeitpunkt = 0;
+            }
+        }
+
 
         $this->doValidate();
 
@@ -399,7 +420,7 @@ class BeurteilungCreate extends Component
         $this->beurteiler2Abgabebereit = false;
     } elseif ($this->activeUser === 2) { // Beurteiler 1 aktiv
         $this->beurteiler1Abgabebereit = true;
-        $this->beurteiler1Abgabebereit = false;
+        $this->beurteiler2Abgabebereit = false;
     }
 
     $someError = false ;
@@ -427,28 +448,42 @@ class BeurteilungCreate extends Component
                     $this->details[$id]['w']['beurteiler1noteError'] = false;
                 }
 
-                $this->gesamtnote1begruendungError = (($this->gesamtnote1== 1 || $this->gesamtnote1 == 4) && (empty($this->gesamtnote1begruendung )));
-                $this->gesamtnote1Error = ($this->gesamtnote1 < 1 || $this->gesamtnote1 > 4);
-                $this->beurteiler1Abgabebereit = !($someError || $this->gesamtnote1begruendungError || $this->gesamtnote1Error);
-                Log::info( '$this->beurteiler1Abgabebereit', [$this->beurteiler1Abgabebereit]);
+
+                // Log::info( '$this->beurteiler1Abgabebereit', [$this->beurteiler1Abgabebereit]);
 
             } elseif ($this->activeUser === 2) { // Beurteiler 2 aktiv
-                if (($detail['w']['beurteiler2note']== 1 || $detail['w']['beurteiler2note'] == 4) && (empty($detail['w']['beurteiler2bemerkung'] ))){
-
+                // Log::info( '$this->beurteiler2note', [$detail['w']['beurteiler2note']]);
+                if (
+                    ($detail['w']['beurteiler2note']== 1 || $detail['w']['beurteiler2note'] == 4) &&
+                    (empty($detail['w']['beurteiler2bemerkung'] )
+                   )){
                     $this->details[$id]['w']['beurteiler2bemerkungError'] = true;
-                } else {
+                    $someError = true ;
+                } else { // Kein Fehler
                     $this->details[$id]['w']['beurteiler2bemerkungError'] = false;
                 }
+
                 if ($detail['w']['beurteiler2note'] < 1 || $detail['w']['beurteiler2note'] > 4) {
                     $this->details[$id]['w']['beurteiler2noteError'] = true;
+                    $someError = true ;
                 }
                 else{
                     $this->details[$id]['w']['beurteiler2noteError'] = false;
                 }
 
+
+                // Log::info( '$this->beurteiler2Abgabebereit', [$this->beurteiler2Abgabebereit]);
+            }
+        }
+        if ($this->activeUser === 1) {
+                $this->gesamtnote1begruendungError = (($this->gesamtnote1== 1 || $this->gesamtnote1 == 4) && (empty($this->gesamtnote1begruendung )));
+                $this->gesamtnote1Error = ($this->gesamtnote1 < 1 || $this->gesamtnote1 > 4);
+                $this->beurteiler1Abgabebereit = !($someError || $this->gesamtnote1begruendungError || $this->gesamtnote1Error);
+            }
+        else {
                 $this->gesamtnote2begruendungError = (($this->gesamtnote2== 1 || $this->gesamtnote2 == 4) && (empty($this->gesamtnote2begruendung )));
                 $this->gesamtnote2Error = ($this->gesamtnote2 < 1 || $this->gesamtnote2 > 4);
-            }
+                $this->beurteiler2Abgabebereit = !($someError || $this->gesamtnote2begruendungError || $this->gesamtnote2Error);
         }
 
     }
@@ -476,29 +511,38 @@ class BeurteilungCreate extends Component
 
     }
 
-
-
-        $this->validate( [
-            'zeitraumvon' => 'required|date|before:zeitraumbis',
-            'zeitraumbis' => 'required|date|after:zeitraumvon',
-        ]);
+    $this->validate( [
+        'zeitraumvon' => 'required|date|before:zeitraumbis',
+        'zeitraumbis' => 'required|date|after:zeitraumvon',
+    ]);
 
     if ($this->beurteiler1Abgabebereit){
-        $this->beurteiler1AbgabebereitText = "Sie sind abgabegereit. Kein Formfehler gefunden!";
+        $this->beurteiler1AbgabebereitText = "Beurteiler 1: Sie sind abgabebereit. Kein Formfehler gefunden!";
     }
     else
-        $this->beurteiler1AbgabebereitText = "Sie noch nicht abgabegereit. Es wurden Formfehler gefunden!";
+        $this->beurteiler1AbgabebereitText = "Beurteiler 1: Sie noch nicht abgabebereit. Es wurden Formfehler gefunden!";
 
+    if ($this->beurteiler2Abgabebereit){
+        $this->beurteiler2AbgabebereitText = "Beurteiler 2: Sie sind abgabebereit. Kein Formfehler gefunden!";
+    }
+    else
+        $this->beurteiler2AbgabebereitText = "Beurteiler 2: Sie noch nicht abgabebereit. Es wurden Formfehler gefunden!";
+
+        if ($this->activeUser === 1) {
+            return $this->beurteiler1Abgabebereit;
+        }
+        else{
+            return $this->beurteiler2Abgabebereit;
+        }
 
    }
 
     public function save(){
 
-
-
-       // Log::info('BeurteilungCreate.php save() - Anfang');
+        // Log::info('BeurteilungCreate.php save() - Anfang');
         //Log::info('  Stack: ',[ debug_backtrace()] );
         $this->thisToBeurteilung();
+
         try{
 
 				// Änderung vom 25.01.2014
@@ -512,91 +556,161 @@ class BeurteilungCreate extends Component
                         $this->mbeurteilung->geeignet2 = $this->mbeurteilung->geeignet1;
                     //}
                 }
-                if ( strtolower($this->kommando) === TEXT_ABGESCHLOSSEN && $this->activeUser === 1){
-                    $this->mbeurteilung->abgeschlossen1 = 1;
+                if ( strtolower($this->kommando) === TEXT_ABGESCHLOSSEN ) {
+                    if ( $this->activeUser === 1){
+                        $this->mbeurteilung->abgeschlossen1 = ($this->beurteiler1Abgabebereit) ? 1 : 0 ;
+                    }
+                    else {
+                        $this->mbeurteilung->abgeschlossen2 =  ($this->beurteiler2Abgabebereit) ? 1 : 0 ;
+                        $this->mmitarbeiter->nbeurteilung = $this->calcNBeurteilung( $this->mmitarbeiter->nbeurteilung, $this->mmitarbeiter->anstellung, $this->mbeurteilung->regelbeurteilung) ;
+                        $this->mmitarbeiter->save();
+                    }
 
                 }
                 elseif ( strtolower($this->kommando) === TEXT_ZURUECK && $this->activeUser === 2){
                     $this->mbeurteilung->abgeschlossen1 = 0 ;
                 }
+
                 $this->mbeurteilung->abgabedatum = $this->calcAbgabedatum();
-            $id = $this->mbeurteilung->save();
-            foreach ($this->details as $key => $detail){
-
-                // dd($detail);
-                if ( !is_null($detail['w']['id'])){
-                    $de = Bdetails::where('beurteilungid', $detail['w']['beurteilungid'])->where('beurteilungsmerkmalid', $detail['w']['beurteilungsmerkmalid'])->first();
-                }
-                else{
-                    $de = new Bdetails();
-                }
-
-
-                $de->beurteilungid = $this->mbeurteilung->id;
-                $de->beurteilungsmerkmalid = $key;
-                if ($this->activeUser == 1){
-                    $de->beurteiler1note = $detail['w']['beurteiler1note'];
-                    $de->beurteiler1bemerkung = $detail['w']['beurteiler1bemerkung'];
-                    $de->beurteiler1laenderung = now();
-                }
-                else{
-                    $de->beurteiler2note = $detail['w']['beurteiler2note'];
-                    $de->beurteiler2bemerkung = $detail['w']['beurteiler2bemerkung'];
-                    $de->beurteiler2laenderung = now();
+                if ($this->mbeurteilung->save()){
+                    $this->id = $this->mbeurteilung->id;
 
                 }
-                // Log::info("save", [ $de->beurteilungid, $de->beurteilungsmerkmalid, $de->beurteiler1note ]);
-                $de->save();
-                $this->showForm = true ;
 
+            if ( $this->mbeurteilung->regelbeurteilung != 2) {
+                foreach ($this->details as $key => $detail){
+
+                    // dd($detail);
+                    if ( !is_null($detail['w']['id'])){
+                        $de = Bdetails::where('beurteilungid', $detail['w']['beurteilungid'])->where('beurteilungsmerkmalid', $detail['w']['beurteilungsmerkmalid'])->first();
+                    }
+                    else{
+                        $de = new Bdetails();
+                    }
+
+
+                    $de->beurteilungid = $this->mbeurteilung->id;
+                    $de->beurteilungsmerkmalid = $key;
+                    if ($this->activeUser == 1){
+                        $de->beurteiler1note = $detail['w']['beurteiler1note'];
+                        $de->beurteiler1bemerkung = $detail['w']['beurteiler1bemerkung'];
+                        $de->beurteiler2bemerkung = $de->beurteiler1bemerkung;
+                        $de->beurteiler1laenderung = now();
+                    }
+                    else{
+                        $de->beurteiler2note = $detail['w']['beurteiler2note'];
+                        $de->beurteiler2bemerkung = $detail['w']['beurteiler2bemerkung'];
+                        $de->beurteiler2laenderung = now();
+
+                    }
+                    // Log::info("save", [ $de->beurteilungid, $de->beurteilungsmerkmalid, $de->beurteiler1note ]);
+                    $de->save();
+                    $this->showTextarea = false ;
+
+                }
             }
 
-		// Meldung speichern für Beurteiler 1
-		if ( strtolower($this->kommando) === TEXT_ZURUECK && $this->activeUser === 2)
-			{
-                if (trim($this->meldungBemerkung) <> '' ){
-                    $mmeldung 						= new Meldung() ;
+            // Meldung speichern für Beurteiler 1
+            if ( strtolower($this->kommando) === TEXT_ZURUECK && $this->activeUser === 2 )
+                {
+                    if (trim($this->meldungBemerkung) <> '' ){
+                        $mmeldung 						= new Meldung() ;
 
-                    $mmeldung->mitarbeiter		= $this->mbeurteilung->beurteiler2 ;
-                    $mmeldung->anmitarbeiter 	= $this->mbeurteilung->beurteiler1 ;
-                    $mmeldung->nachricht		= $this->meldungBemerkung;
-                    $mmeldung->zielid			= $this->mbeurteilung->id;
-                    $mmeldung->art				= ART_BEURTEILUNG ;
-                    $mmeldung->save();
+                        $mmeldung->mitarbeiter		= $this->mbeurteilung->beurteiler2 ;
+                        $mmeldung->anmitarbeiter 	= $this->mbeurteilung->beurteiler1 ;
+                        $mmeldung->nachricht		= $this->meldungBemerkung;
+                        $mmeldung->zielid			= $this->mbeurteilung->id;
+                        $mmeldung->art				= ART_BEURTEILUNG ;
+                        $mmeldung->save();
+
+
+
+                    }
+
+                    return redirect()->route('beurteilung')->with('success', 'Beurteilung wurde zurück an Beurteiler 1 übertragen!');
+
                 }
+            else
+            if ( strtolower($this->kommando) === TEXT_ABGESCHLOSSEN && $this->activeUser === 1 && $this->mbeurteilung->abgeschlossen1 === 1)
+                {
+                    if (trim($this->meldungBemerkung) <> '' ){
+                        $mmeldung 						= new Meldung() ;
 
-			}
-		else
-		if ( strtolower($this->kommando) === TEXT_ABGESCHLOSSEN && $this->activeUser === 1)
-			{
-                if (trim($this->meldungBemerkung) <> '' ){
-                    $mmeldung 						= new Meldung() ;
+                        $mmeldung->mitarbeiter		= $this->mbeurteilung->beurteiler1 ;
+                        $mmeldung->anmitarbeiter 	= $this->mbeurteilung->beurteiler2 ;
+                        $mmeldung->nachricht		= $this->meldungBemerkung;
+                        $mmeldung->zielid			= $this->mbeurteilung->id;
+                        $mmeldung->art				= ART_BEURTEILUNG ;
+                        $mmeldung->save();
+                    }
 
-                    $mmeldung->mitarbeiter		= $this->mbeurteilung->beurteiler1 ;
-                    $mmeldung->anmitarbeiter 	= $this->mbeurteilung->beurteiler2 ;
-                    $mmeldung->nachricht		= $this->meldungBemerkung;
-                    $mmeldung->zielid			= $this->mbeurteilung->id;
-                    $mmeldung->art				= ART_BEURTEILUNG ;
-                    $mmeldung->save();
+                    $this->SendBeurteiler1AbgeschlossenMail();
+
+                    return redirect()->route('beurteilung')->with('success', 'Beurteilung wurde abgeschlossen und die Bestätigung per Mail versandt!');
+
                 }
+                else
+                if ( strtolower($this->kommando) === TEXT_ABGESCHLOSSEN && $this->activeUser === 2  && $this->mbeurteilung->abgeschlossen2 === 1)
+                {
+                    return redirect()->route('beurteilung')->with('success', 'Beurteilung wurde abgeschlossen!');
+                }
+                else
+                    return redirect()->route('beurteilung')->with('success', 'Beurteilung wurde gespeichert!');
 
-                $this->SendBeurteiler1AbgeschlossenMail();
-
-			}
-           // Log::info('BeurteilungCreate.php save() - Ende');
-
-            return redirect()->route('beurteilung')->with('success', 'Beurteilung wurde gespeichert!');
-
-        }
+            }
         catch(\Exception $e){
 
             //$this->dispatch("Fehler: ", [$e->getMessage()]);
             // request()->session()->flash('error', "Fehler: ".$e->getMessage());
 
-            Log::error("Fehler: ".$e->getMessage());
+            Log::error("Fehler beim Speichern der Beurteilung Zeile 619: ".$e->getMessage());
 
         }
 
+    }
+
+
+    public function doShowTextarea($fieldName){
+
+        $this->editFldHeader = $this->getLabelForField($fieldName);
+        $this->activeTextarea = $fieldName;
+
+        $this->showTextarea = true;
+    }
+
+    public function getLabelForField($field): string
+    {
+        // 1. Feste Felder abfangen
+        return match (true) {
+            $field === 'aufgabenbereich' => 'Aufgabenbereich',
+            $field === 'zusatz1' => 'Zusatzbemerkung Beurteiler 1',
+            $field === 'zusatz2' => 'Zusatzbemerkung Beurteiler 2',
+            $field === 'gesamtnote1begruendung' => 'Begründung Gesamtnote 1',
+            $field === 'gesamtnote2begruendung' => 'Begründung Gesamtnote 2',
+
+            // 2. Dynamische Kriterien-Felder abfangen
+            str_starts_with($field, 'details.') => $this->labelFromKriterien($field),
+
+            // 3. Fallback
+            default => 'Bemerkung',
+        };
+    }
+
+    protected function labelFromKriterien(string $field): string
+    {
+        // Regex: hole die ID zwischen 'details.' und '.w.'
+        if (preg_match('/details\.(\d+)\.w\./', $field, $matches)) {
+            $id = (int) $matches[1];
+
+            // Hole das Kriterium
+            $kriterium = \App\Models\Kriterien::find($id);
+
+            if ($kriterium) {
+                return 'Bemerkung zur ' . $kriterium->ueberschrift;
+            }
+        }
+
+        return 'Bemerkung';
     }
 
 	private function calcNBeurteilung ( $param_nb, $param_anstellung, $beurteilungArt ){
@@ -672,7 +786,7 @@ class BeurteilungCreate extends Component
 
     private function SendBeurteiler1AbgeschlossenMail(){
 
-        Log::info('SendBeurteiler1AbgeschlossenMail - Anfang');
+        //Log::info('SendBeurteiler1AbgeschlossenMail - Anfang');
         $details = [
             'beurteiler1anrede' => $this->mbeurteiler1->anrede,
             'beurteiler1name' => $this->mbeurteiler1->name,
@@ -685,22 +799,27 @@ class BeurteilungCreate extends Component
 
         ];
 
+        $to = [];
+        $cc = [];
 
         if (Config::isTest()) {
             $to = [env('EMAIL_TEST', 'mail@andreasalbers.de') ] ; //=> "{$this->mbeurteiler1->vorname} {$this->mbeurteiler1->name} [test]"];
             $cc = [env('EMAIL_TEST_CC', 'mail@andreasalbers.de') ] ; // => "{$this->mbeurteiler2->vorname} {$this->mbeurteiler2->name} [test]"];
         } else {
-            $to = [$this->mbeurteiler1->email => "{$this->mbeurteiler1->vorname} {$this->mbeurteiler1->name}"];
-            $cc = [$this->mbeurteiler2->email => "{$this->mbeurteiler2->vorname} {$this->mbeurteiler2->name}"];
+            $cc = [ $this->mbeurteiler2->email ];
+            $to = [ $this->mbeurteiler1->email ];
+
         }
 
-//dd($to);
+        //dd($to);
         Mail::to($to)
             ->cc($cc)
             ->send(new Beurteiler1AbgeschlossenMail($details));
 
-        Log::info('SendBeurteiler1AbgeschlossenMail - Ende');
+        // Log::info('SendBeurteiler1AbgeschlossenMail - Ende');
     }
+
+
 
 }
 

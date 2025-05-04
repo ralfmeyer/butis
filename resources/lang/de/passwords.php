@@ -1,7 +1,9 @@
 <?php
 
 return [
-    'throttled' => 'Das Kennwort wurde bereits angefordert.',
+    'sent' => 'E-Mail wurde versendet. ',
+    'reset' => 'Neues Passwort wurde gespeichert.',
+    'throttled' => 'Ein Link wurde bereits angefordert.'
 
 ];
 

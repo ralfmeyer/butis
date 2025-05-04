@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
+use function PHPUnit\Framework\isEmpty;
+
 class Config extends Model
 {
     use HasFactory;
@@ -118,6 +120,16 @@ class Config extends Model
     {
         $personalnr = Auth::user()->personalnr;
         return self::getConfigData($option, $personalnr);
+    }
+
+    public static function personalnrStringDefault($option, $default)
+    {
+        $personalnr = Auth::user()->personalnr;
+        $return = self::getConfigData($option, $personalnr);
+        if (empty($return)){
+            $return = $default ;
+        }
+        return $return;
     }
 
     public static function personalnrJson($option)

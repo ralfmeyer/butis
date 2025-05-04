@@ -99,44 +99,33 @@ class Beurteilung extends Model
         'version' => 2,
     ];
 
-    public function __construct(){
-        /*
-        $backtrace = debug_backtrace();
-        if (isset($backtrace[1])) {
-            Log::info ('Die Funktion ',[ $backtrace[1]['function'], $backtrace[0]['function']]);
-        } else {
-            Log::info('Diese Funktion beurteilung.__construct wurde direkt aufgerufen.');
-        }
-            */
-    }
-
 
     public function bdetails()
     {
         return $this->hasMany(Bdetails::class, 'beurteilungid');
     }
 
-    public function mMitarbeiter(){
-        return $this->belongsTo(Mitarbeiter::class, 'mitarbeiterid', 'id');
-    }
 
-    /*
-    public function readBeurteilungenMitarbeiter($id)
+
+    public function mitarbeiter()
     {
-
-        $adapter = $this->getAdapter();
-        $select = $adapter->select()
-            ->from(array('b' => 'beurteilung'), array('*'))
-            ->joinleft(array('mb1' => 'mitarbeiter'), 'mb1.id = b.beurteiler1', array('mb1.name as beurteiler1name', 'mb1.vorname as beurteiler1vorname'))
-            ->joinleft(array('mb2' => 'mitarbeiter'), 'mb2.id = b.beurteiler2', array('mb2.name as beurteiler2name', 'mb2.vorname as beurteiler2vorname'))
-            ->where("b.mitarbeiterid = $id")
-            ->order('b.datum desc');
-        // echo $select->__toString() ;
-        $rows = $adapter->fetchAll($select);
-
-        return $rows;
+        return $this->belongsTo(User::class, 'mitarbeiterid', 'id');
     }
-    */
+
+    public function stelle()
+    {
+        return $this->belongsTo(Stelle::class, 'stelleid', 'id');
+    }
+
+    public function beurteiler1_user()
+    {
+        return $this->belongsTo(User::class, 'beurteiler1', 'id');
+    }
+
+    public function beurteiler2_user()
+    {
+        return $this->belongsTo(User::class, 'beurteiler2', 'id');
+    }
 
 
     public function getAktiveVonBeurteiler1($mitbeiterArr){
@@ -144,7 +133,10 @@ class Beurteilung extends Model
 //  #region 01.08.2024
 
             $query = $this->whereIn('mitarbeiterid', $mitbeiterArr)
-                    ->where('abgeschlossen1', 0);
+                    ->where('abgeschlossen1', 0)
+                    ;
+
+
 
             $result = $query->get();
             return $result;
@@ -163,23 +155,6 @@ class Beurteilung extends Model
     }
 //  #endregion
 
-
-
-
-
-    public function updateBeurteilungenMitarbeiter_als_erledigt($mitid, $beurteilungid)
-    {
-        $data = array('veraltet' => new Zend_Db_Expr('true'));
-        $where =  "mitarbeiterid = $mitid and id <> $beurteilungid";
-
-
-        try {
-            $this->update($data, $where);
-        } catch (Exception $e) {
-            echo 'Exception abgefangen, updateBeurteilungenMitarbeiter_als_erledigt: ',  $e->getMessage(), "\n";
-            die;
-        }
-    }
 
     public function updateBeurteilungAbgabedatum($mitid, $abgabedatum)
     {
@@ -266,6 +241,45 @@ class Beurteilung extends Model
         return $result ;
     }
 
+    private function NoteStr($note){
+        if ($this->version === 2 ){
+            switch ($note) {
+                case 1:
+                    return '<80%';
+                    break;
+                case 2:
+                    return '80%';
+                    break;
+                case 3:
+                    return '180%';
+                    break;
+                case 4:
+                    return '120%';
+                    break;
+                default:
+                    return 'keine';
+
+            }
+        }
+    else
+        {
+            return "$note" ;
+        }
+    }
+
+    public function gesamtNoteStr(){
+        return $this->NoteStr($this->gesamtnote2);
+    }
+
+    public function anstellungStr(){
+        if ($this->teilzeit == 0) {
+            return 'Vollzeit';
+        }
+        else {
+            return 'Teilzeit';
+        }
+
+    }
 }
 
 
